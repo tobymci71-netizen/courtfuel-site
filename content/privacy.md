@@ -2,7 +2,7 @@
 
 **Last updated: 24 May 2026**
 
-CourtFuel ("we", "us", "our") is a basketball-specific nutrition app developed by Toby Mcintosh, based in Guernsey. This Privacy Policy explains what data CourtFuel collects, how it's used, and the choices you have.
+CourtFuel ("we", "us", "our") is a basketball-specific nutrition app developed by the CourtFuel team. This Privacy Policy explains what data CourtFuel collects, how it's used, and the choices you have.
 
 ## Information we collect
 
@@ -71,4 +71,4 @@ Questions about privacy: **contact@courtfuel.app**
 
 ---
 
-*CourtFuel is operated by Toby Mcintosh, Guernsey.*
+*© CourtFuel*

@@ -2,7 +2,7 @@
 
 **Last updated: 24 May 2026**
 
-These Terms of Use ("Terms") govern your use of the CourtFuel mobile app ("CourtFuel", "the app"), operated by Toby Mcintosh, based in Guernsey ("we", "us"). By using CourtFuel, you agree to these Terms.
+These Terms of Use ("Terms") govern your use of the CourtFuel mobile app ("CourtFuel", "the app"), operated by the CourtFuel team ("we", "us"). By using CourtFuel, you agree to these Terms.
 
 ## Eligibility
 
@@ -41,7 +41,7 @@ You retain ownership of meal photos you scan and any other content you add to th
 
 ## Intellectual property
 
-CourtFuel, its name, logo, design, and all related materials are owned by Toby Mcintosh. You may not copy or reproduce them without permission.
+CourtFuel, its name, logo, design, and all related materials are owned by CourtFuel. You may not copy or reproduce them without permission.
 
 ## Disclaimer of warranties
 
@@ -61,7 +61,7 @@ You may stop using CourtFuel at any time by deleting your account in-app or unin
 
 ## Governing law
 
-These Terms are governed by the laws of Guernsey. Any disputes will be resolved in the courts of Guernsey.
+These Terms are governed by the laws of the United Kingdom. Any disputes will be resolved in the courts of competent jurisdiction.
 
 ## Contact
 
@@ -69,4 +69,4 @@ Questions about these Terms: **contact@courtfuel.app**
 
 ---
 
-*CourtFuel is operated by Toby Mcintosh, Guernsey.*
+*© CourtFuel*

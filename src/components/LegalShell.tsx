@@ -34,7 +34,7 @@ export default function LegalShell({
       </main>
 
       <footer className="border-t border-cf-black/10 px-6 py-8 text-center text-sm text-cf-black/50">
-        Made in Guernsey 🇬🇬 · © 2026
+        © 2026 CourtFuel
       </footer>
     </div>
   );

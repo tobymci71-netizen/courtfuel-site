@@ -153,9 +153,9 @@ export default function Home() {
                 body: "Real-time suggestions to hit your macro targets.",
               },
               {
-                icon: "🇬🇬",
+                icon: "🏀",
                 title: "Built by a hooper, for hoopers",
-                body: "Made in Guernsey by a basketball player.",
+                body: "Made for players who want to take their game seriously.",
               },
             ].map((f) => (
               <div
@@ -337,7 +337,7 @@ export default function Home() {
             </Link>
           </nav>
           <p className="text-center md:text-right">
-            Made in Guernsey 🇬🇬 · © 2026
+            © 2026 CourtFuel
           </p>
         </div>
       </footer>
