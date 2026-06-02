@@ -223,7 +223,7 @@ export default function Home() {
                 Everything you need to fuel the season.
               </p>
               <p className="mt-6 text-4xl font-bold tracking-tight">
-                $3.99
+                $4.99
                 <span className="text-base font-medium text-cf-black/50">
                   {" "}
                   / month
