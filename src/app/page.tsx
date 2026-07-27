@@ -223,13 +223,13 @@ export default function Home() {
                 Everything you need to fuel the season.
               </p>
               <p className="mt-6 text-4xl font-bold tracking-tight">
-                $4.99
+                $7.99
                 <span className="text-base font-medium text-cf-black/50">
                   {" "}
                   / month
                 </span>
               </p>
-              <p className="mt-1 text-sm text-cf-black/50">or $24.99 / year</p>
+              <p className="mt-1 text-sm text-cf-black/50">or $59.99 / year</p>
               <ul className="mt-8 space-y-3 text-sm">
                 {[
                   "Unlimited scans",
