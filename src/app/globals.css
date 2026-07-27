@@ -4,6 +4,10 @@
   --color-cf-black: #0a0a0a;
   --color-cf-offwhite: #f2f2f4;
   --color-cf-orange: #ff6b1a;
+  /* Text-safe orange. #ff6b1a is 2.55:1 on the page background and 2.85:1 on
+     white — both fail WCAG AA. This darker tone reads 5.4:1 on white and is
+     used for link and glyph text only; the brand fill colour is unchanged. */
+  --color-cf-orange-ink: #b23c00;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 

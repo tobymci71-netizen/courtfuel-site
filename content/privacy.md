@@ -55,9 +55,9 @@ You can leave at any time from Profile → Leaderboard. Leaving deletes your ent
 
 ## Third-party services
 
-- **Anthropic (Claude API)** — receives meal photos and your player profile at the moment of analysis, to generate scores and plans. https://www.anthropic.com/privacy
-- **Supabase** — hosts our database, holding your backup, your leaderboard entry if you joined, and your authentication session. https://supabase.com/privacy
-- **RevenueCat** — manages your subscription. Receives your Sign in with Apple identifier and your purchase history. https://www.revenuecat.com/privacy
+- **Anthropic (Claude API)** — receives meal photos and your player profile at the moment of analysis, to generate scores and plans. [Anthropic Privacy Policy](https://www.anthropic.com/privacy)
+- **Supabase** — hosts our database, holding your backup, your leaderboard entry if you joined, and your authentication session. [Supabase Privacy Policy](https://supabase.com/privacy)
+- **RevenueCat** — manages your subscription. Receives your Sign in with Apple identifier and your purchase history. [RevenueCat Privacy Policy](https://www.revenuecat.com/privacy)
 - **Apple** — Sign in with Apple for authentication, and the App Store for payment processing. Governed by Apple's terms.
 
 ## Data retention and deletion

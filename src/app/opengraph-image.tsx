@@ -1,7 +1,6 @@
 import { ImageResponse } from "next/og";
 
 // TODO: replace with a designed OG image (1200x630) when available
-export const runtime = "edge";
 export const alt = "CourtFuel — AI nutrition for basketball players";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -23,7 +22,14 @@ export default function OpengraphImage() {
           padding: 80,
         }}
       >
-        <div style={{ fontSize: 96, fontWeight: 700, letterSpacing: -2 }}>
+        <div
+          style={{
+            display: "flex",
+            fontSize: 96,
+            fontWeight: 700,
+            letterSpacing: -2,
+          }}
+        >
           Court<span style={{ color: "#FF6B1A" }}>Fuel</span>
         </div>
         <div
@@ -45,7 +51,7 @@ export default function OpengraphImage() {
             color: "rgba(255,255,255,0.5)",
           }}
         >
-          AI nutrition for basketball players · iOS beta
+          AI nutrition for basketball players · Free on iPhone
         </div>
       </div>
     ),

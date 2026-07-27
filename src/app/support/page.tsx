@@ -4,6 +4,8 @@ import LegalShell from "@/components/LegalShell";
 export const metadata: Metadata = {
   title: "Support — CourtFuel",
   description: "Get help with CourtFuel.",
+  alternates: { canonical: "/support" },
+  openGraph: { title: "Support — CourtFuel", description: "Get help with CourtFuel.", type: "article" },
 };
 
 export default function SupportPage() {
@@ -13,15 +15,16 @@ export default function SupportPage() {
         CourtFuel Support
       </h1>
       <p className="my-4 text-[17px] leading-[1.7] text-cf-black/85">
-        Need help? Reach me at{" "}
-        {/* TODO: replace contact@courtfuel.app with the real support email once set up */}
+        Need help? Email{" "}
         <a
           href="mailto:contact@courtfuel.app"
-          className="font-semibold text-cf-orange underline-offset-2 hover:underline"
+          className="font-semibold text-cf-orange-ink underline underline-offset-2"
         >
           contact@courtfuel.app
         </a>{" "}
-        (email coming soon) and I&apos;ll get back to you within 48 hours.
+        and I&apos;ll get back to you as soon as I can. Include your device and
+        iOS version if something isn&apos;t working — it makes a fix much
+        faster.
       </p>
 
       <h2 className="mt-12 mb-4 text-2xl font-semibold tracking-tight text-cf-black">

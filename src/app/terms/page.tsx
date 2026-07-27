@@ -7,6 +7,8 @@ import Markdown from "@/components/Markdown";
 export const metadata: Metadata = {
   title: "Terms of Use — CourtFuel",
   description: "The terms that govern your use of CourtFuel.",
+  alternates: { canonical: "/terms" },
+  openGraph: { title: "Terms of Use — CourtFuel", description: "The terms that govern your use of CourtFuel.", type: "article" },
 };
 
 export default async function TermsPage() {

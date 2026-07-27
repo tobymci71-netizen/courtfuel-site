@@ -1,7 +1,8 @@
 import Link from "next/link";
 
-// TODO: replace #testflight anchor with the real TestFlight public link
-const TESTFLIGHT_HREF = "#testflight";
+// Locale-neutral App Store link — Apple redirects to the visitor's own
+// storefront. Verified live: "CourtFuel - Basketball Fuel", id6772562071.
+const APP_STORE_HREF = "https://apps.apple.com/app/id6772562071";
 
 function Wordmark({ className = "" }: { className?: string }) {
   return (
@@ -23,7 +24,7 @@ function CTAButton({
   return (
     <a
       href={href}
-      className={`inline-flex items-center justify-center rounded-full bg-cf-orange px-7 py-3.5 text-base font-semibold text-white shadow-lg shadow-cf-orange/20 transition hover:brightness-110 active:scale-[0.98] ${className}`}
+      className={`inline-flex items-center justify-center rounded-full bg-cf-orange px-7 py-3.5 text-base font-semibold text-cf-black shadow-lg shadow-cf-orange/20 transition hover:brightness-110 active:scale-[0.98] ${className}`}
     >
       {children}
     </a>
@@ -32,7 +33,7 @@ function CTAButton({
 
 export default function Home() {
   return (
-    <>
+    <main id="content">
       {/* Hero */}
       <section className="relative flex min-h-screen flex-col bg-cf-black">
         <header className="flex items-center justify-between px-6 py-5 md:px-10 md:py-7">
@@ -63,10 +64,11 @@ export default function Home() {
               get a score, fuel your game.
             </p>
             <div className="mt-10 flex flex-col items-center gap-4">
-              <CTAButton href={TESTFLIGHT_HREF}>Join the beta</CTAButton>
+              <CTAButton href={APP_STORE_HREF}>
+                Download on the App Store
+              </CTAButton>
               <p className="text-sm text-white/50">
-                Coming soon to the App Store. Currently in private beta on
-                TestFlight.
+                Free to download. iPhone, iOS 17 or later.
               </p>
             </div>
           </div>
@@ -97,7 +99,7 @@ export default function Home() {
               {
                 emoji: "📈",
                 title: "Track your game",
-                body: "Daily fuel, hydration, recovery — all in one place.",
+                body: "Daily fuel score, hydration, your schedule and your logged games — all in one place.",
               },
             ].map((step) => (
               <div key={step.title} className="text-center md:text-left">
@@ -148,9 +150,9 @@ export default function Home() {
                 body: "Pro subscribers get a 7-day plan matched to their preferences, budget, and supermarkets.",
               },
               {
-                icon: "🔄",
-                title: "Smart swap recommendations",
-                body: "Real-time suggestions to hit your macro targets.",
+                icon: "🏋️",
+                title: "Your training week",
+                body: "Pro subscribers get an AI drill plan built for their position, with a body map showing what each drill trains.",
               },
               {
                 icon: "🏀",
@@ -183,7 +185,7 @@ export default function Home() {
             Pricing
           </h2>
           <p className="mt-4 text-center text-cf-black/60">
-            Free forever for daily players. Pro for serious ones.
+            Free for daily players. Pro for serious ones.
           </p>
 
           <div className="mt-12 grid gap-6 md:grid-cols-2">
@@ -195,7 +197,7 @@ export default function Home() {
                 $0
                 <span className="text-base font-medium text-cf-black/50">
                   {" "}
-                  / forever
+                  to start
                 </span>
               </p>
               <ul className="mt-8 space-y-3 text-sm">
@@ -203,10 +205,10 @@ export default function Home() {
                   "2 scans per day",
                   "Player card + archetype",
                   "Daily fuel + hydration tracking",
-                  "Free forever",
+                  "No card required",
                 ].map((item) => (
                   <li key={item} className="flex gap-2">
-                    <span className="text-cf-orange">✓</span>
+                    <span className="text-cf-orange-ink" aria-hidden="true">✓</span>
                     <span>{item}</span>
                   </li>
                 ))}
@@ -215,41 +217,40 @@ export default function Home() {
 
             {/* Pro */}
             <div className="relative rounded-3xl border-2 border-cf-orange bg-white p-8 shadow-xl shadow-cf-orange/10">
-              <span className="absolute -top-3 right-6 rounded-full bg-cf-orange px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
+              <span className="absolute -top-3 right-6 rounded-full bg-cf-orange px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cf-black">
                 Pro
               </span>
               <h3 className="text-xl font-semibold">Pro</h3>
               <p className="mt-2 text-cf-black/60">
                 Everything you need to fuel the season.
               </p>
-              <p className="mt-6 text-4xl font-bold tracking-tight">
-                $7.99
-                <span className="text-base font-medium text-cf-black/50">
-                  {" "}
-                  / month
-                </span>
+              <p className="mt-6 text-3xl font-bold tracking-tight">
+                Monthly or yearly
               </p>
-              <p className="mt-1 text-sm text-cf-black/50">or $59.99 / year</p>
+              <p className="mt-1 text-sm text-cf-black/50">
+                Current pricing is shown in the App Store and in the app, in
+                your local currency, before you commit to anything.
+              </p>
               <ul className="mt-8 space-y-3 text-sm">
                 {[
-                  "Unlimited scans",
-                  "Weekly meal plans",
-                  "Smart swap recommendations",
-                  "Game-day readiness",
-                  "Weekly fuel reports",
+                  "Unlimited meal scans",
+                  "Fuel My Week — a 7-day meal plan matched to your supermarkets, budget and cooking level",
+                  "Full recipes, a checkable shopping list you can send to Reminders, and a weekly prep guide",
+                  "Your training week — an AI drill plan built for your position",
+                  "Drill tracking that feeds your rank",
                 ].map((item) => (
                   <li key={item} className="flex gap-2">
-                    <span className="text-cf-orange">✓</span>
+                    <span className="text-cf-orange-ink" aria-hidden="true">✓</span>
                     <span>{item}</span>
                   </li>
                 ))}
               </ul>
               <div className="mt-8">
-                <CTAButton href={TESTFLIGHT_HREF} className="w-full">
-                  Join the beta
+                <CTAButton href={APP_STORE_HREF} className="w-full">
+                  Download on the App Store
                 </CTAButton>
                 <p className="mt-3 text-center text-xs text-cf-black/50">
-                  Free for beta testers.
+                  Free to download. Pro is optional.
                 </p>
               </div>
             </div>
@@ -275,15 +276,15 @@ export default function Home() {
               },
               {
                 q: "Does it work for vegetarians/vegans?",
-                a: "Yes. During Fuel onboarding you set dietary requirements and the AI works around them.",
+                a: "Yes. Fuel My Week is a Pro feature, and when you set it up you choose dietary requirements — vegetarian, vegan, halal, kosher, dairy free, gluten free or nut allergy — and the weekly plan is built around them.",
               },
               {
-                q: "Is my data private?",
-                a: "Yes. Everything lives on your device. We don't sell data, run ads, or track you across the internet. See our Privacy Policy.",
+                q: "What happens to my data?",
+                a: "Your scans, hydration and schedule live on your device, and a copy of your history is backed up to our database in the UK so a new phone doesn't mean starting over. Meal photos are sent to our AI provider only at the moment of analysis, and are never included in that backup. We don't sell data, run ads, or track you across the internet. See our Privacy Policy.",
               },
               {
                 q: "How accurate are the scans?",
-                a: "Highly accurate for common dishes; sometimes off for complex multi-component meals or unusual cuisines. Treat scores as guidance, not gospel.",
+                a: "Good for common, clearly photographed dishes; less reliable for complex multi-component meals, unusual cuisines, or anything where portion size is hard to judge from a photo. Treat every score as guidance, not gospel — and not as medical or dietary advice.",
               },
               {
                 q: "Can I cancel anytime?",
@@ -304,20 +305,19 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Final CTA / TestFlight anchor */}
+      {/* Final CTA */}
       <section
-        id="testflight"
+        id="download"
         className="bg-cf-black px-6 py-24 text-center md:py-32"
       >
         <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
           Ready to fuel up?
         </h2>
         <p className="mx-auto mt-4 max-w-md text-white/70">
-          Join the private TestFlight beta and start scoring your meals today.
+          Download CourtFuel and start scoring your meals today.
         </p>
         <div className="mt-8">
-          {/* TODO: swap href for the real TestFlight public link once available */}
-          <CTAButton href={TESTFLIGHT_HREF}>Join the beta</CTAButton>
+          <CTAButton href={APP_STORE_HREF}>Download on the App Store</CTAButton>
         </div>
       </section>
 
@@ -325,14 +325,23 @@ export default function Home() {
       <footer className="border-t border-white/10 bg-cf-black px-6 py-10 text-sm text-white/60">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 md:flex-row">
           <Wordmark className="text-lg text-white" />
-          <nav className="flex flex-wrap justify-center gap-6">
-            <Link href="/privacy" className="transition hover:text-cf-orange">
+          <nav className="-my-2 flex flex-wrap justify-center gap-x-6">
+            <Link
+              href="/privacy"
+              className="inline-flex min-h-11 items-center py-2 transition hover:text-white"
+            >
               Privacy Policy
             </Link>
-            <Link href="/terms" className="transition hover:text-cf-orange">
+            <Link
+              href="/terms"
+              className="inline-flex min-h-11 items-center py-2 transition hover:text-white"
+            >
               Terms of Use
             </Link>
-            <Link href="/support" className="transition hover:text-cf-orange">
+            <Link
+              href="/support"
+              className="inline-flex min-h-11 items-center py-2 transition hover:text-white"
+            >
               Support
             </Link>
           </nav>
@@ -341,6 +350,6 @@ export default function Home() {
           </p>
         </div>
       </footer>
-    </>
+    </main>
   );
 }

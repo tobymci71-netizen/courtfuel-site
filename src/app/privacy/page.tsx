@@ -7,6 +7,8 @@ import Markdown from "@/components/Markdown";
 export const metadata: Metadata = {
   title: "Privacy Policy — CourtFuel",
   description: "How CourtFuel collects and handles your data.",
+  alternates: { canonical: "/privacy" },
+  openGraph: { title: "Privacy Policy — CourtFuel", description: "How CourtFuel collects and handles your data.", type: "article" },
 };
 
 export default async function PrivacyPage() {

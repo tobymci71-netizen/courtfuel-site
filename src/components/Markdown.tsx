@@ -43,7 +43,7 @@ export default function Markdown({ children }: { children: string }) {
         li: (props) => <li {...props} />,
         a: (props) => (
           <a
-            className="text-cf-orange underline-offset-2 hover:underline"
+            className="font-medium text-cf-orange-ink underline underline-offset-2 decoration-cf-orange-ink/40 hover:decoration-cf-orange-ink break-words"
             {...props}
           />
         ),
