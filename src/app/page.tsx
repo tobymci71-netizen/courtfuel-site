@@ -179,7 +179,10 @@ export default function Home() {
               <GhostButton href="/clippers">Become a clipper →</GhostButton>
             </div>
             <p className="cf-fade-up cf-delay-4 mt-4 text-sm text-white/50">
-              Free to download. iPhone, iOS 17 or later.
+              Free to download. iPhone, iOS 17 or later ·{" "}
+              <span className="font-semibold text-white/70">
+                Android coming soon
+              </span>
             </p>
           </div>
           <div className="cf-fade-up cf-delay-2 relative">
@@ -494,6 +497,9 @@ export default function Home() {
              Download on the App Store
           </CTAButton>
         </div>
+        <p className="mt-4 text-sm text-white/50">
+          🤖 Android coming soon
+        </p>
       </section>
 
       {/* ============ Footer ============ */}
