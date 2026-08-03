@@ -206,7 +206,9 @@ export default function Home() {
               {[
                 "Scan your meal",
                 "Get your fuel score",
+                "Eat better every day",
                 "Track your game",
+                "No guilt trips",
                 "Fuel every quarter",
               ].map((t) => (
                 <span key={t} className="flex items-center">
@@ -282,6 +284,69 @@ export default function Home() {
                 </h3>
                 <p className="mt-2 text-base leading-relaxed text-white/60">
                   {step.body}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============ Not just game day ============ */}
+      <section className="relative isolate overflow-hidden bg-cf-black px-6 py-24 md:py-32">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-[-15%] top-1/2 -z-10 h-[460px] w-[460px] -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(255,107,26,0.1),transparent)] blur-2xl"
+        />
+        <div className="mx-auto max-w-6xl">
+          <p
+            data-reveal
+            className="text-center text-sm font-bold uppercase tracking-[0.2em] text-cf-orange"
+          >
+            For every day
+          </p>
+          <h2
+            data-reveal
+            className="mt-3 text-center text-3xl font-bold tracking-tight text-white sm:text-4xl"
+          >
+            Not all about game day
+          </h2>
+          <p
+            data-reveal
+            className="mx-auto mt-4 max-w-2xl text-center text-white/60"
+          >
+            Most of life happens between games. CourtFuel works on rest days,
+            school days and off-seasons too — no pressure, no perfection.
+          </p>
+          <div className="mt-16 grid gap-6 md:grid-cols-3">
+            {[
+              {
+                emoji: "🍕",
+                title: "Real food, zero guilt",
+                body: "Scan whatever you actually eat — takeaway included. You get a score, never a lecture. One rough meal doesn't break anything.",
+              },
+              {
+                emoji: "💧",
+                title: "Easy everyday habits",
+                body: "Daily fuel and hydration tracking that takes seconds. Small habits that quietly add up, whether you played today or not.",
+              },
+              {
+                emoji: "🛒",
+                title: "Fits your real life",
+                body: "Meal plans built around your supermarkets, your budget and your cooking level — not a pro athlete's chef kitchen.",
+              },
+            ].map((c, i) => (
+              <div
+                key={c.title}
+                data-reveal
+                style={{ "--reveal-delay": `${i * 0.12}s` } as React.CSSProperties}
+                className="cf-card cf-shine p-7 text-center md:text-left"
+              >
+                <span className="text-4xl">{c.emoji}</span>
+                <h3 className="mt-4 text-xl font-semibold text-white">
+                  {c.title}
+                </h3>
+                <p className="mt-2 text-base leading-relaxed text-white/60">
+                  {c.body}
                 </p>
               </div>
             ))}
