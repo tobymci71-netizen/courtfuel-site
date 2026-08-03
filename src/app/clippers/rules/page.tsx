@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import RevealDriver from "@/components/RevealDriver";
 import { getSettings, fmtUsd } from "@/lib/clippers/engine";
 
 export const metadata: Metadata = {
@@ -138,7 +139,7 @@ export default async function RulesPage() {
             <p className="text-sm leading-relaxed text-white/70">
               <span className="font-semibold text-white">Ideal viewer:</span>{" "}
               13–25 year-old hoopers and basketball-obsessed fans (plus
-              basketball parents) — school, AAU, rec-league, college and
+              basketball parents) — high school, AAU, rec-league, college and
               semi-pro players who love the grind: training, stats, being
               doubted, proving people wrong.
             </p>
@@ -149,12 +150,14 @@ export default async function RulesPage() {
               <br />
               Top priority: <span className="text-white">United States</span>
               <br />
-              Also strong: Canada, United Kingdom, Australia
+              Also strong (big basketball culture + App Store spend): Canada,
+              Australia, France, Germany, Spain
             </p>
             <p className="mt-4 text-sm leading-relaxed text-white/60">
               Match your content&apos;s language and references to your chosen
-              country (US → &quot;#1 in the state&quot;, varsity, AAU; UK →
-              academy, national league).
+              country (US → &quot;#1 in the state&quot;, varsity, AAU, March
+              Madness; Canada → prep leagues, OUA; France → espoirs, Pro B
+              youth).
             </p>
           </Card>
         </section>
@@ -175,12 +178,12 @@ export default async function RulesPage() {
             <ul className="mt-3 space-y-2 text-sm leading-relaxed text-white/70">
               <li>
                 • <span className="text-white">Username:</span> a normal,
-                name-style handle — e.g. jaydenmoore_, kai.rb, marcus_23. Avoid
+                name-style handle — e.g. jaydenmoore_, tyler.jb, marcus_23. Avoid
                 brand/bot names (besthoopclips247).
               </li>
               <li>
                 • <span className="text-white">Display name:</span> a real
-                first name, optionally a position or one emoji — Jayden, Kai
+                first name, optionally a position or one emoji — Jayden, Tyler
                 🏀, Marcus · PG.
               </li>
               <li>
@@ -274,7 +277,7 @@ export default async function RulesPage() {
               The face rule (MANDATORY)
             </h3>
             <p className="mt-3 text-sm leading-relaxed text-white/70">
-              Never post a recognisable face that isn&apos;t yours. If a
+              Never post a recognizable face that isn&apos;t yours. If a
               sourced photo (Pinterest, Google, anywhere) shows an identifiable
               person who isn&apos;t you, you must alter that person with an AI
               image tool before posting — and make sure it doesn&apos;t look
@@ -284,7 +287,7 @@ export default async function RulesPage() {
               How: upload the photo → tell it e.g. &quot;keep this image and
               everything exactly the same — same pose, background, lighting —
               but change the player: different hair, different skin tone,
-              change the jersey colour.&quot; Skip only when it&apos;s your own
+              change the jersey color.&quot; Skip only when it&apos;s your own
               photo, no identifiable face is shown, or the image is fully
               AI-generated. Un-altered real faces = rejected.
             </p>
@@ -429,20 +432,7 @@ export default async function RulesPage() {
           </div>
         </section>
       </div>
-
-      {/* Scroll-reveal driver */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `(function(){
-var els=document.querySelectorAll('[data-reveal]');
-if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('is-in')});return}
-var io=new IntersectionObserver(function(entries){
-entries.forEach(function(en){if(en.isIntersecting){en.target.classList.add('is-in');io.unobserve(en.target)}})
-},{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
-els.forEach(function(e){io.observe(e)});
-})();`,
-        }}
-      />
+      <RevealDriver />
     </div>
   );
 }

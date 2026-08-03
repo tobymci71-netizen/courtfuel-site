@@ -1,4 +1,5 @@
 import Link from "next/link";
+import RevealDriver from "@/components/RevealDriver";
 
 // Locale-neutral App Store link — Apple redirects to the visitor's own
 // storefront. Verified live: "CourtFuel - Basketball Fuel", id6772562071.
@@ -838,20 +839,7 @@ export default function Home() {
           <p className="text-center md:text-right">© 2026 CourtFuel</p>
         </div>
       </footer>
-
-      {/* Scroll-reveal driver: adds .is-in when elements enter the viewport */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `(function(){
-var els=document.querySelectorAll('[data-reveal]');
-if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('is-in')});return}
-var io=new IntersectionObserver(function(entries){
-entries.forEach(function(en){if(en.isIntersecting){en.target.classList.add('is-in');io.unobserve(en.target)}})
-},{threshold:0.12,rootMargin:'0px 0px -48px 0px'});
-els.forEach(function(e){io.observe(e)});
-})();`,
-        }}
-      />
+      <RevealDriver />
     </main>
   );
 }
