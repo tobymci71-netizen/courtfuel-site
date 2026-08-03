@@ -24,6 +24,12 @@ export default async function ClippersLayout({
           <span className="text-white/50">Clippers</span>
         </Link>
         <nav className="flex items-center gap-4 text-sm">
+          <Link
+            href="/clippers/rules"
+            className="text-white/70 transition hover:text-white"
+          >
+            Guide
+          </Link>
           {user ? (
             <>
               <Link

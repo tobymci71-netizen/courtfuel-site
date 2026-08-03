@@ -135,6 +135,14 @@ export default async function ClippersLanding() {
               I have an account
             </Link>
           </div>
+          <p className="cf-fade-up cf-delay-4 mt-5">
+            <Link
+              href="/clippers/rules"
+              className="inline-flex items-center gap-2 rounded-full border border-cf-orange/40 bg-cf-orange/10 px-5 py-2.5 text-sm font-semibold text-cf-orange transition hover:bg-cf-orange hover:text-cf-black"
+            >
+              📖 Read the program guide first
+            </Link>
+          </p>
         </div>
       </section>
 
