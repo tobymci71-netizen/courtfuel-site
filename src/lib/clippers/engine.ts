@@ -1,0 +1,133 @@
+import "server-only";
+import { ensureSchema, sql, type SettingsRow } from "./db";
+import { fetchViewCounts } from "./tiktok";
+
+// How earnings work:
+// - Each refresh pulls fresh view counts for every APPROVED video.
+// - A video only earns on NEW views since the last refresh (the delta).
+// - delta earnings = deltaViews / 1000 * RPM.
+// - Earnings only accrue while the campaign is active AND budget remains.
+//   The final accrual is clamped to exactly exhaust the budget, so total
+//   payouts can never exceed the budget you set. Raising the budget later
+//   resumes accrual from the current view counts (views seen while the
+//   budget was exhausted don't retroactively earn).
+
+const BATCH_SIZE = 25;
+
+export type RefreshResult = {
+  checked: number;
+  updated: number;
+  missing: number;
+  earnedCentsAdded: number;
+  budgetExhausted: boolean;
+  errors: string[];
+};
+
+export async function refreshViews(): Promise<RefreshResult> {
+  await ensureSchema();
+  const result: RefreshResult = {
+    checked: 0,
+    updated: 0,
+    missing: 0,
+    earnedCentsAdded: 0,
+    budgetExhausted: false,
+    errors: [],
+  };
+
+  const videos = await sql<
+    { id: number; url: string; tiktok_id: string; views: number }[]
+  >`SELECT id, url, tiktok_id, views FROM cf_videos WHERE status = 'approved' ORDER BY id`;
+  result.checked = videos.length;
+  if (videos.length === 0) return result;
+
+  for (let i = 0; i < videos.length; i += BATCH_SIZE) {
+    const batch = videos.slice(i, i + BATCH_SIZE);
+    let counts: Map<string, number>;
+    try {
+      counts = await fetchViewCounts(batch.map((v) => v.url));
+    } catch (err) {
+      result.errors.push(err instanceof Error ? err.message : String(err));
+      continue;
+    }
+
+    for (const video of batch) {
+      const fresh = counts.get(video.tiktok_id);
+      if (fresh === undefined) {
+        result.missing++;
+        await sql`
+          UPDATE cf_videos
+          SET last_checked = now(),
+              track_error = 'Could not read this post (deleted, private, or scraper miss)'
+          WHERE id = ${video.id}`;
+        continue;
+      }
+
+      // Serializable accrual: lock settings, compute clamp, apply.
+      const added = await sql.begin(async (tx) => {
+        const [s] = await tx<
+          SettingsRow[]
+        >`SELECT rpm_cents, budget_cents, total_earned_cents, campaign_active
+          FROM cf_settings WHERE id = 1 FOR UPDATE`;
+        const [row] = await tx<
+          { views: number }[]
+        >`SELECT views FROM cf_videos WHERE id = ${video.id} FOR UPDATE`;
+
+        const deltaViews = Math.max(0, fresh - Number(row.views));
+        let earn = 0;
+        if (deltaViews > 0 && s.campaign_active) {
+          const raw = Math.floor((deltaViews * s.rpm_cents) / 1000);
+          const remaining = Math.max(
+            0,
+            Number(s.budget_cents) - Number(s.total_earned_cents),
+          );
+          earn = Math.min(raw, remaining);
+        }
+
+        await tx`
+          UPDATE cf_videos
+          SET views = ${fresh},
+              earned_cents = earned_cents + ${earn},
+              last_checked = now(),
+              track_error = ''
+          WHERE id = ${video.id}`;
+        if (earn > 0) {
+          await tx`
+            UPDATE cf_settings
+            SET total_earned_cents = total_earned_cents + ${earn},
+                updated_at = now()
+            WHERE id = 1`;
+        }
+        return earn;
+      });
+
+      result.updated++;
+      result.earnedCentsAdded += added;
+    }
+  }
+
+  const [s] = await sql<SettingsRow[]>`
+    SELECT rpm_cents, budget_cents, total_earned_cents, campaign_active
+    FROM cf_settings WHERE id = 1`;
+  result.budgetExhausted =
+    Number(s.total_earned_cents) >= Number(s.budget_cents);
+  return result;
+}
+
+export async function getSettings(): Promise<SettingsRow> {
+  await ensureSchema();
+  const [s] = await sql<SettingsRow[]>`
+    SELECT rpm_cents, budget_cents, total_earned_cents, campaign_active
+    FROM cf_settings WHERE id = 1`;
+  return s;
+}
+
+export function fmtUsd(cents: number | string) {
+  return (Number(cents) / 100).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+  });
+}
+
+export function fmtViews(n: number | string) {
+  return Number(n).toLocaleString("en-US");
+}

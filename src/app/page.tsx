@@ -344,6 +344,12 @@ export default function Home() {
             >
               Support
             </Link>
+            <Link
+              href="/clippers"
+              className="inline-flex min-h-11 items-center py-2 transition hover:text-white"
+            >
+              Clippers — get paid to post
+            </Link>
           </nav>
           <p className="text-center md:text-right">
             © 2026 CourtFuel
