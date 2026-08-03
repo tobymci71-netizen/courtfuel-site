@@ -195,16 +195,53 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ============ Marquee ============ */}
+      <div
+        className="relative overflow-hidden border-y border-white/5 bg-cf-black py-5"
+        aria-hidden="true"
+      >
+        <div className="cf-marquee-track text-sm font-bold uppercase tracking-[0.3em] text-white/25">
+          {[0, 1].map((copy) => (
+            <span key={copy} className="flex shrink-0 items-center">
+              {[
+                "Scan your meal",
+                "Get your fuel score",
+                "Track your game",
+                "Fuel every quarter",
+              ].map((t) => (
+                <span key={t} className="flex items-center">
+                  <span className="px-6">{t}</span>
+                  <span className="text-cf-orange">🏀</span>
+                </span>
+              ))}
+            </span>
+          ))}
+        </div>
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-cf-black to-transparent" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-cf-black to-transparent" />
+      </div>
+
       {/* ============ How it works ============ */}
       <section id="how" className="relative bg-cf-black px-6 py-24 md:py-32">
         <div className="mx-auto max-w-5xl">
-          <p className="text-center text-sm font-bold uppercase tracking-[0.2em] text-cf-orange">
+          <p
+            data-reveal
+            className="text-center text-sm font-bold uppercase tracking-[0.2em] text-cf-orange"
+          >
             How it works
           </p>
-          <h2 className="mt-3 text-center text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h2
+            data-reveal
+            className="mt-3 text-center text-3xl font-bold tracking-tight text-white sm:text-4xl"
+          >
             Three steps to better fuel
           </h2>
-          <div className="mt-16 grid gap-6 md:grid-cols-3">
+          <div className="relative mt-16 grid gap-6 md:grid-cols-3">
+            {/* connector line */}
+            <div
+              aria-hidden="true"
+              className="absolute left-[16%] right-[16%] top-10 hidden h-px bg-gradient-to-r from-transparent via-cf-orange/50 to-transparent md:block"
+            />
             {[
               {
                 n: "01",
@@ -224,14 +261,22 @@ export default function Home() {
                 title: "Track your game",
                 body: "Daily fuel score, hydration, your schedule and your logged games — all in one place.",
               },
-            ].map((step) => (
-              <div key={step.n} className="cf-card p-7">
-                <div className="flex items-start justify-between">
-                  <span className="text-4xl">{step.emoji}</span>
-                  <span className="text-sm font-bold text-white/25">
-                    {step.n}
-                  </span>
-                </div>
+            ].map((step, i) => (
+              <div
+                key={step.n}
+                data-reveal
+                style={{ "--reveal-delay": `${i * 0.12}s` } as React.CSSProperties}
+                className="cf-card relative p-7"
+              >
+                <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute right-4 top-2 text-[5rem] font-black leading-none text-white/[0.04]"
+                >
+                  {step.n}
+                </span>
+                <span className="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-cf-orange/30 bg-cf-orange/10 text-3xl shadow-[0_0_30px_-6px_rgba(255,107,26,0.45)]">
+                  {step.emoji}
+                </span>
                 <h3 className="mt-5 text-xl font-semibold text-white">
                   {step.title}
                 </h3>
@@ -244,7 +289,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ============ Features ============ */}
+      {/* ============ Features (bento) ============ */}
       <section
         id="features"
         className="relative isolate overflow-hidden bg-cf-black px-6 py-24 md:py-32"
@@ -254,23 +299,66 @@ export default function Home() {
           className="pointer-events-none absolute right-[-15%] top-1/3 -z-10 h-[500px] w-[500px] rounded-full bg-[radial-gradient(closest-side,rgba(255,107,26,0.12),transparent)] blur-2xl"
         />
         <div className="mx-auto max-w-6xl">
-          <p className="text-center text-sm font-bold uppercase tracking-[0.2em] text-cf-orange">
+          <p
+            data-reveal
+            className="text-center text-sm font-bold uppercase tracking-[0.2em] text-cf-orange"
+          >
             Features
           </p>
-          <h2 className="mt-3 text-center text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h2
+            data-reveal
+            className="mt-3 text-center text-3xl font-bold tracking-tight text-white sm:text-4xl"
+          >
             Built for basketball
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-center text-white/60">
+          <p
+            data-reveal
+            className="mx-auto mt-4 max-w-2xl text-center text-white/60"
+          >
             Generic nutrition apps weren&apos;t made for the demands of the
             game. CourtFuel is.
           </p>
+
           <div className="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Big bento card with animated bars */}
+            <div
+              data-reveal
+              className="cf-card cf-shine p-7 sm:col-span-2"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-6">
+                <div className="max-w-sm">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-cf-orange/30 bg-cf-orange/10 text-xl">
+                    🎯
+                  </span>
+                  <h3 className="mt-4 text-lg font-semibold text-white">
+                    Position-aware nutrition
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-white/60">
+                    Plans tuned to PG / SG / SF / PF / C demands — because a
+                    point guard&apos;s engine doesn&apos;t run on the same
+                    fuel as a center&apos;s.
+                  </p>
+                </div>
+                <div className="min-w-[200px] flex-1 space-y-3 text-xs">
+                  {[
+                    ["PG — quick fuel", "w-11/12", "cf-bar-1"],
+                    ["SF — endurance", "w-4/6", "cf-bar-2"],
+                    ["C — strength", "w-5/6", "cf-bar-3"],
+                  ].map(([label, w, d]) => (
+                    <div key={label as string}>
+                      <p className="mb-1.5 text-white/50">{label}</p>
+                      <div className="h-2 rounded-full bg-white/10">
+                        <div
+                          className={`cf-bar ${d} h-full rounded-full bg-gradient-to-r from-cf-orange/70 to-cf-orange ${w}`}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             {[
-              {
-                icon: "🎯",
-                title: "Position-aware nutrition",
-                body: "Plans tuned to PG / SG / SF / PF / C demands.",
-              },
               {
                 icon: "🔥",
                 title: "Game-day fuel",
@@ -296,8 +384,13 @@ export default function Home() {
                 title: "Built by a hooper, for hoopers",
                 body: "Made for players who want to take their game seriously.",
               },
-            ].map((f) => (
-              <div key={f.title} className="cf-card p-6">
+            ].map((f, i) => (
+              <div
+                key={f.title}
+                data-reveal
+                style={{ "--reveal-delay": `${(i % 3) * 0.1}s` } as React.CSSProperties}
+                className="cf-card cf-shine p-6"
+              >
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl border border-cf-orange/30 bg-cf-orange/10 text-xl">
                   {f.icon}
                 </span>
@@ -316,16 +409,22 @@ export default function Home() {
       {/* ============ Pricing ============ */}
       <section id="pricing" className="bg-cf-black px-6 py-24 md:py-32">
         <div className="mx-auto max-w-5xl">
-          <p className="text-center text-sm font-bold uppercase tracking-[0.2em] text-cf-orange">
+          <p
+            data-reveal
+            className="text-center text-sm font-bold uppercase tracking-[0.2em] text-cf-orange"
+          >
             Pricing
           </p>
-          <h2 className="mt-3 text-center text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h2
+            data-reveal
+            className="mt-3 text-center text-3xl font-bold tracking-tight text-white sm:text-4xl"
+          >
             Free for daily players. Pro for serious ones.
           </h2>
 
           <div className="mt-14 grid gap-6 md:grid-cols-2">
             {/* Free */}
-            <div className="cf-card p-8">
+            <div data-reveal="left" className="cf-card p-8">
               <h3 className="text-xl font-semibold text-white">Free</h3>
               <p className="mt-2 text-white/60">Get started today.</p>
               <p className="mt-6 text-4xl font-bold tracking-tight text-white">
@@ -352,8 +451,11 @@ export default function Home() {
               </ul>
             </div>
 
-            {/* Pro */}
-            <div className="relative rounded-[1.25rem] bg-gradient-to-b from-cf-orange/60 via-cf-orange/20 to-transparent p-px">
+            {/* Pro — rotating conic gradient border */}
+            <div
+              data-reveal="right"
+              className="cf-conic-border relative rounded-[1.25rem] p-px"
+            >
               <div className="relative h-full rounded-[calc(1.25rem-1px)] bg-[#141210] p-8">
                 <span className="absolute -top-3 right-6 rounded-full bg-cf-orange px-3 py-1 text-xs font-bold uppercase tracking-wide text-cf-black shadow-lg shadow-cf-orange/30">
                   Pro
@@ -402,10 +504,16 @@ export default function Home() {
       {/* ============ FAQ ============ */}
       <section id="faq" className="bg-cf-black px-6 pb-28">
         <div className="mx-auto max-w-3xl">
-          <p className="text-center text-sm font-bold uppercase tracking-[0.2em] text-cf-orange">
+          <p
+            data-reveal
+            className="text-center text-sm font-bold uppercase tracking-[0.2em] text-cf-orange"
+          >
             FAQ
           </p>
-          <h2 className="mt-3 text-center text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h2
+            data-reveal
+            className="mt-3 text-center text-3xl font-bold tracking-tight text-white sm:text-4xl"
+          >
             Questions, answered
           </h2>
           <div className="mt-12 space-y-3">
@@ -434,15 +542,17 @@ export default function Home() {
                 q: "Can I cancel anytime?",
                 a: "Yes. Manage your subscription in iOS Settings → Apple ID → Subscriptions.",
               },
-            ].map((item) => (
+            ].map((item, i) => (
               <details
                 key={item.q}
-                className="group rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-5 transition open:border-cf-orange/40 open:bg-white/[0.05]"
+                data-reveal
+                style={{ "--reveal-delay": `${i * 0.06}s` } as React.CSSProperties}
+                className="group rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-5 transition hover:border-white/20 open:border-cf-orange/40 open:bg-white/[0.05]"
               >
                 <summary className="flex cursor-pointer list-none items-start justify-between gap-6 text-left text-base font-semibold text-white">
                   <span>{item.q}</span>
                   <span
-                    className="mt-0.5 text-cf-orange transition group-open:rotate-45"
+                    className="mt-0.5 text-cf-orange transition-transform duration-300 group-open:rotate-45"
                     aria-hidden="true"
                   >
                     +
@@ -457,10 +567,13 @@ export default function Home() {
 
       {/* ============ Clipper CTA band ============ */}
       <section className="px-6 pb-24">
-        <div className="relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] border border-cf-orange/25 bg-gradient-to-br from-cf-orange/15 via-cf-black to-cf-black px-8 py-14 text-center md:py-16">
+        <div
+          data-reveal="scale"
+          className="cf-shine relative mx-auto max-w-6xl overflow-hidden rounded-[2rem] border border-cf-orange/25 bg-gradient-to-br from-cf-orange/15 via-cf-black to-cf-black px-8 py-14 text-center md:py-16"
+        >
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute left-1/2 top-0 h-64 w-[600px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(255,107,26,0.25),transparent)] blur-2xl"
+            className="cf-glow pointer-events-none absolute left-1/2 top-0 h-64 w-[600px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(255,107,26,0.25),transparent)] blur-2xl"
           />
           <p className="cf-chip">💸 Creator program</p>
           <h2 className="mt-5 text-balance text-3xl font-bold tracking-tight text-white sm:text-4xl">
@@ -480,24 +593,32 @@ export default function Home() {
       {/* ============ Final CTA ============ */}
       <section
         id="download"
-        className="relative isolate overflow-hidden bg-cf-black px-6 py-24 text-center md:py-32"
+        className="relative isolate overflow-hidden bg-cf-black px-6 py-28 text-center md:py-36"
       >
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-1/2 bottom-[-40%] -z-10 h-[400px] w-[700px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(255,107,26,0.2),transparent)] blur-2xl"
-        />
-        <h2 className="text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl">
+          className="pointer-events-none absolute inset-0 -z-10"
+        >
+          <span className="cf-ring h-[340px] w-[340px]" />
+          <span className="cf-ring h-[340px] w-[340px]" style={{ animationDelay: "1.3s" }} />
+          <span className="cf-ring h-[340px] w-[340px]" style={{ animationDelay: "2.6s" }} />
+          <div className="absolute left-1/2 top-1/2 h-[300px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(255,107,26,0.16),transparent)] blur-2xl" />
+        </div>
+        <h2
+          data-reveal
+          className="text-balance text-4xl font-bold tracking-tight text-white sm:text-5xl"
+        >
           Ready to <span className="cf-text-gradient">fuel up?</span>
         </h2>
-        <p className="mx-auto mt-4 max-w-md text-lg text-white/70">
+        <p data-reveal className="mx-auto mt-4 max-w-md text-lg text-white/70">
           Download CourtFuel and start scoring your meals today.
         </p>
-        <div className="mt-9">
+        <div data-reveal className="mt-9">
           <CTAButton href={APP_STORE_HREF}>
              Download on the App Store
           </CTAButton>
         </div>
-        <p className="mt-4 text-sm text-white/50">
+        <p data-reveal className="mt-4 text-sm text-white/50">
           🤖 Android coming soon
         </p>
       </section>
@@ -535,6 +656,20 @@ export default function Home() {
           <p className="text-center md:text-right">© 2026 CourtFuel</p>
         </div>
       </footer>
+
+      {/* Scroll-reveal driver: adds .is-in when elements enter the viewport */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `(function(){
+var els=document.querySelectorAll('[data-reveal]');
+if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add('is-in')});return}
+var io=new IntersectionObserver(function(entries){
+entries.forEach(function(en){if(en.isIntersecting){en.target.classList.add('is-in');io.unobserve(en.target)}})
+},{threshold:0.12,rootMargin:'0px 0px -48px 0px'});
+els.forEach(function(e){io.observe(e)});
+})();`,
+        }}
+      />
     </main>
   );
 }
