@@ -17,11 +17,16 @@ export default async function ClippersLanding() {
   }
 
   return (
-    <div className="py-12">
+    <div className="relative isolate py-12">
+      <div
+        aria-hidden="true"
+        className="cf-glow pointer-events-none absolute left-1/2 top-[-10%] -z-10 h-[480px] w-[760px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(255,107,26,0.25),rgba(255,107,26,0.06),transparent)] blur-2xl"
+      />
       <div className="mx-auto max-w-2xl text-center">
-        <h1 className="text-balance text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
+        <p className="cf-chip cf-fade-up">💸 Creator program</p>
+        <h1 className="cf-fade-up cf-delay-1 mt-6 text-balance text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
           Post CourtFuel content.{" "}
-          <span className="text-cf-orange">Get paid per view.</span>
+          <span className="cf-text-gradient">Get paid per view.</span>
         </h1>
         <p className="mx-auto mt-5 max-w-lg text-lg text-white/70">
           Make TikToks and slideshows promoting CourtFuel from your own
@@ -29,7 +34,7 @@ export default async function ClippersLanding() {
           1,000 views.
         </p>
         {rpm && (
-          <div className="mx-auto mt-8 flex max-w-md items-center justify-center gap-8 rounded-2xl border border-white/10 bg-white/[0.03] px-6 py-5">
+          <div className="cf-card cf-fade-up cf-delay-2 mx-auto mt-8 flex max-w-md items-center justify-center gap-8 px-6 py-5">
             <div>
               <p className="text-2xl font-bold text-cf-orange">{rpm}</p>
               <p className="mt-1 text-xs uppercase tracking-wide text-white/50">
@@ -79,10 +84,7 @@ export default async function ClippersLanding() {
             body: "View counts refresh automatically. Your dashboard shows exactly what you've earned and what's been paid.",
           },
         ].map((s) => (
-          <div
-            key={s.step}
-            className="rounded-2xl border border-white/10 bg-white/[0.03] p-6"
-          >
+          <div key={s.step} className="cf-card p-6">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-cf-orange text-sm font-bold text-cf-black">
               {s.step}
             </span>
