@@ -137,6 +137,9 @@ export default function Home() {
               <a href="#features" className="transition hover:text-white">
                 Features
               </a>
+              <a href="#training" className="transition hover:text-white">
+                Training
+              </a>
               <a href="#pricing" className="transition hover:text-white">
                 Pricing
               </a>
@@ -208,6 +211,7 @@ export default function Home() {
                 "Get your fuel score",
                 "Eat better every day",
                 "Track your game",
+                "Train your week",
                 "No guilt trips",
                 "Fuel every quarter",
               ].map((t) => (
@@ -467,6 +471,119 @@ export default function Home() {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============ Training ============ */}
+      <section
+        id="training"
+        className="relative isolate overflow-hidden bg-cf-black px-6 py-24 md:py-32"
+      >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[500px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(closest-side,rgba(255,107,26,0.1),transparent)] blur-2xl"
+        />
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-14 lg:flex-row lg:justify-between">
+          {/* Training week card */}
+          <div data-reveal="left" className="relative order-2 lg:order-1">
+            <div
+              aria-hidden="true"
+              className="absolute -inset-8 -z-10 rounded-full bg-[radial-gradient(closest-side,rgba(255,107,26,0.16),transparent)] blur-xl"
+            />
+            <div className="w-[300px] rounded-[2rem] border border-white/12 bg-gradient-to-b from-white/[0.08] to-white/[0.02] p-5 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.8)] backdrop-blur-sm sm:w-[340px]">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-white/80">
+                  Your training week
+                </p>
+                <span className="rounded-full bg-cf-orange/15 px-2.5 py-1 text-xs font-bold text-cf-orange">
+                  SG
+                </span>
+              </div>
+              <ul className="mt-4 space-y-2.5 text-sm">
+                {[
+                  ["Mon", "Ball handling", true],
+                  ["Tue", "Catch & shoot", true],
+                  ["Thu", "First-step burst", false],
+                  ["Sat", "Game day", false],
+                ].map(([day, drill, done]) => (
+                  <li
+                    key={day as string}
+                    className="flex items-center gap-3 rounded-xl border border-white/10 bg-cf-black/50 px-3.5 py-2.5"
+                  >
+                    <span
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${
+                        done
+                          ? "bg-cf-orange text-cf-black"
+                          : "border border-white/25 text-transparent"
+                      }`}
+                    >
+                      ✓
+                    </span>
+                    <span className="w-8 text-xs font-semibold uppercase text-white/40">
+                      {day}
+                    </span>
+                    <span className="text-white/85">{drill}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-4">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold uppercase tracking-wide text-white/50">
+                    Rank progress
+                  </span>
+                  <span className="font-bold text-cf-orange">↑</span>
+                </div>
+                <div className="mt-2 h-2 rounded-full bg-white/10">
+                  <div className="cf-bar cf-bar-2 h-full w-2/3 rounded-full bg-gradient-to-r from-cf-orange/70 to-cf-orange" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            data-reveal="right"
+            className="order-1 max-w-xl text-center lg:order-2 lg:text-left"
+          >
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-cf-orange">
+              Training
+            </p>
+            <h2 className="mt-3 text-balance text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              Fuel is half the game.{" "}
+              <span className="cf-text-gradient">Training is the other.</span>
+            </h2>
+            <p className="mt-5 text-lg leading-relaxed text-white/65">
+              CourtFuel isn&apos;t just what you eat — it plans how you train.
+              Pro builds you an AI drill plan for your position, with a body
+              map showing exactly what each drill works.
+            </p>
+            <ul className="mt-8 space-y-4 text-left">
+              {[
+                [
+                  "🗓️",
+                  "A weekly drill plan built for your position — PG to C.",
+                ],
+                [
+                  "🫀",
+                  "A body map on every drill, so you know what it's training.",
+                ],
+                [
+                  "📊",
+                  "Tick off drills as you do them — completed work feeds your rank.",
+                ],
+                [
+                  "🏀",
+                  "Your schedule and logged games sit alongside it, all in one app.",
+                ],
+              ].map(([icon, text]) => (
+                <li key={text as string} className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-cf-orange/30 bg-cf-orange/10 text-base">
+                    {icon}
+                  </span>
+                  <span className="text-white/75">{text}</span>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
