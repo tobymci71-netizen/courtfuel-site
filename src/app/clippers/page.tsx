@@ -3,21 +3,24 @@ import { getSettings, fmtUsd } from "@/lib/clippers/engine";
 
 export default async function ClippersLanding() {
   let rpmCents = 0;
+  let budgetCents = 0;
+  let earnedCents = 0;
   let budgetLeftCents = 0;
   let active = true;
   let haveStats = false;
   try {
     const s = await getSettings();
     rpmCents = Number(s.rpm_cents);
-    budgetLeftCents = Math.max(
-      0,
-      Number(s.budget_cents) - Number(s.total_earned_cents),
-    );
+    budgetCents = Number(s.budget_cents);
+    earnedCents = Number(s.total_earned_cents);
+    budgetLeftCents = Math.max(0, budgetCents - earnedCents);
     active = s.campaign_active;
     haveStats = true;
   } catch {
     // Database not configured yet — show the page without live numbers.
   }
+  const budgetPct =
+    budgetCents > 0 ? Math.min(100, (earnedCents / budgetCents) * 100) : 0;
 
   // Live worked example at the current rate.
   const exampleViews = 25_000;
@@ -82,6 +85,33 @@ export default async function ClippersLanding() {
                   </p>
                 </div>
               ))}
+            </div>
+          )}
+          {haveStats && budgetCents > 0 && (
+            <div className="cf-fade-up cf-delay-3 mx-auto mt-6 max-w-lg text-left">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold uppercase tracking-wide text-white/50">
+                  Budget used this round
+                </span>
+                <span className="font-bold text-white/70">
+                  {fmtUsd(earnedCents)}{" "}
+                  <span className="font-medium text-white/40">
+                    of {fmtUsd(budgetCents)}
+                  </span>
+                </span>
+              </div>
+              <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className={`h-full rounded-full ${budgetPct >= 100 ? "bg-red-500" : "bg-gradient-to-r from-cf-orange/70 to-cf-orange"}`}
+                  style={{ width: `${budgetPct}%` }}
+                />
+              </div>
+              {budgetPct >= 100 && (
+                <p className="mt-2 text-xs text-red-400">
+                  This round&apos;s budget is fully used — earning resumes when
+                  the next round opens.
+                </p>
+              )}
             </div>
           )}
           {!active && (
@@ -225,6 +255,16 @@ export default async function ClippersLanding() {
         >
           The rules
         </h2>
+        <p data-reveal className="mt-3 text-center text-sm text-white/60">
+          The short version — the{" "}
+          <Link
+            href="/clippers/rules"
+            className="font-semibold text-cf-orange hover:underline"
+          >
+            full program guide
+          </Link>{" "}
+          covers account setup, the content format and everything else.
+        </p>
         <div className="mx-auto mt-10 grid max-w-4xl gap-5 sm:grid-cols-2">
           {[
             {
@@ -276,6 +316,17 @@ export default async function ClippersLanding() {
         <h2 data-reveal className="text-3xl font-bold tracking-tight sm:text-4xl">
           Ready to <span className="cf-text-gradient">get paid?</span>
         </h2>
+        <p data-reveal className="mx-auto mt-3 max-w-md text-sm text-white/60">
+          Read the{" "}
+          <Link
+            href="/clippers/rules"
+            className="font-semibold text-cf-orange hover:underline"
+          >
+            full program guide
+          </Link>{" "}
+          first — it&apos;s the difference between a post that flops and a
+          post that pays.
+        </p>
         <div data-reveal className="mt-8">
           <Link
             href="/clippers/signup"
