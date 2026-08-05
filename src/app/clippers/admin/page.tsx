@@ -242,6 +242,7 @@ export default async function AdminPage() {
       label: "Total views",
       value: fmtViews(totalViews),
       sub: `${approvedCount} live videos`,
+      href: "#creators",
     },
     {
       icon: "💰",
@@ -249,12 +250,14 @@ export default async function AdminPage() {
       value: fmtUsd(remaining),
       sub: `of ${fmtUsd(budget)}`,
       alert: budget > 0 && remaining === 0,
+      href: "#settings",
     },
     {
       icon: "📤",
       label: "Owed to clippers",
       value: fmtUsd(totalOwed),
       sub: `${clippers.length} per-view clippers`,
+      href: "#clippers",
     },
     {
       icon: "⏳",
@@ -262,6 +265,7 @@ export default async function AdminPage() {
       value: String(pendingCount),
       sub: "approvals in queue",
       alert: pendingCount > 0,
+      href: "#approvals",
     },
     {
       icon: "🤝",
@@ -269,6 +273,7 @@ export default async function AdminPage() {
       value: String(fixedDueCount),
       sub: `${fixedCreators.length} on fixed deals`,
       alert: fixedDueCount > 0,
+      href: "#fixed",
     },
   ];
 
@@ -297,12 +302,33 @@ export default async function AdminPage() {
         <RefreshButton action={adminRefreshViews} />
       </div>
 
+      {/* Quick jump */}
+      <nav className="cf-fade-up cf-delay-1 -mt-2 flex flex-wrap gap-2 text-sm">
+        {[
+          ["#approvals", "⏳ Approvals"],
+          ["#creators", "👥 Creator accounts"],
+          ["#top", "🏆 Top videos"],
+          ["#clippers", "✂️ Clippers"],
+          ["#fixed", "🤝 Fixed deals"],
+          ["#settings", "⚙️ Settings"],
+        ].map(([href, label]) => (
+          <a
+            key={href}
+            href={href}
+            className="rounded-full border border-white/15 bg-white/[0.04] px-4 py-1.5 font-medium text-white/70 transition hover:border-cf-orange/50 hover:text-white"
+          >
+            {label}
+          </a>
+        ))}
+      </nav>
+
       {/* KPI tiles */}
       <div className="cf-fade-up cf-delay-1 grid grid-cols-2 gap-4 lg:grid-cols-5">
         {kpis.map((k) => (
-          <div
+          <a
             key={k.label}
-            className={`cf-card p-5 ${k.alert ? "border-cf-orange/50 bg-cf-orange/5" : ""}`}
+            href={k.href}
+            className={`cf-card block p-5 ${k.alert ? "border-cf-orange/50 bg-cf-orange/5" : ""}`}
           >
             <div className="flex items-center justify-between">
               <span className="text-xl">{k.icon}</span>
@@ -315,14 +341,14 @@ export default async function AdminPage() {
               {k.label}
             </p>
             <p className="text-xs text-white/40">{k.sub}</p>
-          </div>
+          </a>
         ))}
       </div>
 
       {/* Budget + settings side by side */}
-      <div className="cf-fade-up cf-delay-2 grid gap-6 lg:grid-cols-2">
+      <div id="settings" className="cf-fade-up cf-delay-2 grid scroll-mt-24 gap-6 lg:grid-cols-2">
         <section className="cf-card p-6">
-          <h2 className="flex items-center text-lg font-semibold">
+          <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
             💸 Budget this round
           </h2>
           <div className="mt-4 flex items-end justify-between gap-4">
@@ -353,7 +379,7 @@ export default async function AdminPage() {
         </section>
 
         <section className="cf-card p-6">
-          <h2 className="flex items-center text-lg font-semibold">
+          <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
             ⚙️ Campaign settings
           </h2>
           <div className="mt-4">
@@ -368,9 +394,9 @@ export default async function AdminPage() {
       </div>
 
       {/* Approvals side by side */}
-      <div className="cf-fade-up cf-delay-3 grid gap-6 lg:grid-cols-2">
+      <div id="approvals" className="cf-fade-up cf-delay-3 grid scroll-mt-24 gap-6 lg:grid-cols-2">
         <section className="cf-card p-6">
-          <h2 className="flex items-center text-lg font-semibold">
+          <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
             👤 Account approvals
             <CountBadge n={pendingAccounts.length} />
           </h2>
@@ -404,7 +430,7 @@ export default async function AdminPage() {
         </section>
 
         <section className="cf-card p-6">
-          <h2 className="flex items-center text-lg font-semibold">
+          <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
             🎬 Video approvals
             <CountBadge n={pendingVideos.length} />
           </h2>
@@ -438,54 +464,10 @@ export default async function AdminPage() {
         </section>
       </div>
 
-      {/* Top videos */}
-      {topVideos.length > 0 && (
-        <section className="cf-fade-up cf-delay-3 cf-card p-6">
-          <h2 className="flex items-center text-lg font-semibold">
-            🏆 Top videos
-          </h2>
-          <ul className="mt-4 divide-y divide-white/10">
-            {topVideos.map((v, i) => (
-              <li key={v.url} className="flex items-center gap-4 py-3">
-                <span
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black ${
-                    i === 0
-                      ? "bg-cf-orange text-cf-black"
-                      : "bg-white/10 text-white/60"
-                  }`}
-                >
-                  {i + 1}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <a
-                    href={v.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block max-w-[420px] truncate text-sm font-medium text-white hover:text-cf-orange"
-                  >
-                    {v.url.replace("https://www.tiktok.com/", "")}
-                  </a>
-                  <p className="text-xs text-white/50">
-                    @{v.handle} · {v.display_name}
-                    {v.pay_type === "fixed" && " · fixed rate"}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold tabular-nums">{fmtViews(v.views)}</p>
-                  <p className="text-xs text-white/50">
-                    {v.pay_type === "fixed" ? "views" : fmtUsd(v.earned_cents)}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       {/* Everyone: accounts & videos drill-down */}
-      <section className="cf-fade-up cf-delay-4 cf-card p-6">
-        <h2 className="flex items-center text-lg font-semibold">
-          📋 Everyone&apos;s accounts &amp; videos
+      <section id="creators" className="cf-fade-up cf-delay-4 cf-card scroll-mt-24 p-6">
+        <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
+          👥 Creator accounts &amp; videos
         </h2>
         <p className="mt-1 text-sm text-white/60">
           Click a person to see every account and video under their email,
@@ -530,6 +512,24 @@ export default async function AdminPage() {
                         <p className="truncate text-xs text-white/50">
                           {u.email}
                         </p>
+                        {accounts.length > 0 && (
+                          <p className="mt-1 flex flex-wrap gap-1.5">
+                            {accounts.map((acc) => (
+                              <span
+                                key={acc.id}
+                                className={`rounded-full px-2 py-0.5 text-xs font-medium ${
+                                  acc.status === "approved"
+                                    ? "bg-emerald-500/10 text-emerald-400"
+                                    : acc.status === "rejected"
+                                      ? "bg-red-500/10 text-red-400"
+                                      : "bg-amber-500/10 text-amber-400"
+                                }`}
+                              >
+                                @{acc.handle}
+                              </span>
+                            ))}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
@@ -636,9 +636,54 @@ export default async function AdminPage() {
         )}
       </section>
 
+
+      {/* Top videos */}
+      {topVideos.length > 0 && (
+        <section id="top" className="cf-fade-up cf-delay-3 cf-card scroll-mt-24 p-6">
+          <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
+            🏆 Top videos
+          </h2>
+          <ul className="mt-4 divide-y divide-white/10">
+            {topVideos.map((v, i) => (
+              <li key={v.url} className="flex items-center gap-4 py-3">
+                <span
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black ${
+                    i === 0
+                      ? "bg-cf-orange text-cf-black"
+                      : "bg-white/10 text-white/60"
+                  }`}
+                >
+                  {i + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <a
+                    href={v.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block max-w-[420px] truncate text-sm font-medium text-white hover:text-cf-orange"
+                  >
+                    {v.url.replace("https://www.tiktok.com/", "")}
+                  </a>
+                  <p className="text-xs text-white/50">
+                    @{v.handle} · {v.display_name}
+                    {v.pay_type === "fixed" && " · fixed rate"}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold tabular-nums">{fmtViews(v.views)}</p>
+                  <p className="text-xs text-white/50">
+                    {v.pay_type === "fixed" ? "views" : fmtUsd(v.earned_cents)}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* Per-view clippers */}
-      <section className="cf-fade-up cf-delay-4 cf-card p-6">
-        <h2 className="flex items-center text-lg font-semibold">
+      <section id="clippers" className="cf-fade-up cf-delay-4 cf-card scroll-mt-24 p-6">
+        <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
           ✂️ Clippers &amp; payouts
           <CountBadge n={clippers.filter((c) => Number(c.earned) > Number(c.paid)).length} />
         </h2>
@@ -666,7 +711,7 @@ export default async function AdminPage() {
                 {clippers.map((c) => {
                   const owed = Math.max(0, Number(c.earned) - Number(c.paid));
                   return (
-                    <tr key={c.user_id}>
+                    <tr key={c.user_id} className="transition hover:bg-white/[0.02]">
                       <td className="max-w-[200px] py-3 pr-4">
                         <p className="truncate font-medium">{c.display_name}</p>
                         <p className="truncate text-xs text-white/50">
@@ -715,8 +760,8 @@ export default async function AdminPage() {
       </section>
 
       {/* Fixed-rate creators */}
-      <section className="cf-fade-up cf-delay-4 cf-card p-6">
-        <h2 className="flex items-center text-lg font-semibold">
+      <section id="fixed" className="cf-fade-up cf-delay-4 cf-card scroll-mt-24 p-6">
+        <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
           🤝 Fixed-rate creators
           <CountBadge n={fixedDueCount} color="red" />
         </h2>
@@ -748,7 +793,7 @@ export default async function AdminPage() {
                 {fixedCreators.map((c) => {
                   const due = nextDue(c);
                   return (
-                    <tr key={c.user_id}>
+                    <tr key={c.user_id} className="transition hover:bg-white/[0.02]">
                       <td className="max-w-[180px] py-3 pr-4">
                         <p className="truncate font-medium">{c.display_name}</p>
                         <p className="truncate text-xs text-white/50">
