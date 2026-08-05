@@ -235,6 +235,33 @@ export async function recordPayment(
   return { ok: "Payment recorded." };
 }
 
+export async function setPayType(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  await requireAdmin();
+  const userId = Number(formData.get("user_id"));
+  const payType = String(formData.get("pay_type"));
+  const note = String(formData.get("deal_note") ?? "").trim().slice(0, 200);
+  if (!Number.isInteger(userId) || !["per_view", "fixed"].includes(payType))
+    return { error: "Bad request." };
+
+  await ensureSchema();
+  await sql`
+    UPDATE cf_users
+    SET pay_type = ${payType},
+        deal_note = ${payType === "fixed" ? note : ""}
+    WHERE id = ${userId} AND role = 'clipper'`;
+  revalidatePath("/clippers/admin");
+  revalidatePath("/clippers/dashboard");
+  return {
+    ok:
+      payType === "fixed"
+        ? "Moved to fixed rate — their videos are tracked but no longer earn from the campaign budget."
+        : "Moved to per-view — their videos now earn at the campaign RPM.",
+  };
+}
+
 export async function adminRefreshViews(
   _prev: FormState,
 ): Promise<FormState> {

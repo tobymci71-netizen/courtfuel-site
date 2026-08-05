@@ -35,8 +35,16 @@ export async function refreshViews(): Promise<RefreshResult> {
   };
 
   const videos = await sql<
-    { id: number; url: string; tiktok_id: string; views: number }[]
-  >`SELECT id, url, tiktok_id, views FROM cf_videos WHERE status = 'approved' ORDER BY id`;
+    {
+      id: number;
+      url: string;
+      tiktok_id: string;
+      views: number;
+      pay_type: string;
+    }[]
+  >`SELECT v.id, v.url, v.tiktok_id, v.views, u.pay_type
+    FROM cf_videos v JOIN cf_users u ON u.id = v.user_id
+    WHERE v.status = 'approved' ORDER BY v.id`;
   result.checked = videos.length;
   if (videos.length === 0) return result;
 
@@ -74,7 +82,7 @@ export async function refreshViews(): Promise<RefreshResult> {
 
         const deltaViews = Math.max(0, fresh - Number(row.views));
         let earn = 0;
-        if (deltaViews > 0 && s.campaign_active) {
+        if (deltaViews > 0 && s.campaign_active && video.pay_type === "per_view") {
           const raw = Math.floor((deltaViews * s.rpm_cents) / 1000);
           const remaining = Math.max(
             0,

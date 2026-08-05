@@ -7,10 +7,12 @@ import {
   recordPayment,
   reviewAccount,
   reviewVideo,
+  setPayType,
   updateSettings,
 } from "@/lib/clippers/actions";
 import {
   PaymentForm,
+  PayTypeForm,
   RefreshButton,
   SettingsForm,
 } from "@/components/clippers/forms";
@@ -35,6 +37,7 @@ type ClipperSummary = {
   display_name: string;
   email: string;
   payout_method: string;
+  deal_note: string;
   videos: string;
   views: string;
   earned: string;
@@ -74,7 +77,7 @@ export default async function AdminPage() {
   if (user.role !== "admin") redirect("/clippers/dashboard");
 
   await ensureSchema();
-  const [settings, pendingAccounts, pendingVideos, clippers] =
+  const [settings, pendingAccounts, pendingVideos, clippers, fixedCreators] =
     await Promise.all([
       getSettings(),
       sql<PendingAccount[]>`
@@ -88,16 +91,27 @@ export default async function AdminPage() {
         JOIN cf_users u ON u.id = v.user_id
         WHERE v.status = 'pending' ORDER BY v.created_at`,
       sql<ClipperSummary[]>`
-        SELECT u.id AS user_id, u.display_name, u.email, u.payout_method,
+        SELECT u.id AS user_id, u.display_name, u.email, u.payout_method, u.deal_note,
                COUNT(v.id) FILTER (WHERE v.status = 'approved') AS videos,
                COALESCE(SUM(v.views) FILTER (WHERE v.status = 'approved'), 0) AS views,
                COALESCE(SUM(v.earned_cents), 0) AS earned,
                COALESCE((SELECT SUM(p.amount_cents) FROM cf_payments p WHERE p.user_id = u.id), 0) AS paid
         FROM cf_users u
         LEFT JOIN cf_videos v ON v.user_id = u.id
-        WHERE u.role = 'clipper'
+        WHERE u.role = 'clipper' AND u.pay_type = 'per_view'
         GROUP BY u.id
         ORDER BY earned DESC`,
+      sql<ClipperSummary[]>`
+        SELECT u.id AS user_id, u.display_name, u.email, u.payout_method, u.deal_note,
+               COUNT(v.id) FILTER (WHERE v.status = 'approved') AS videos,
+               COALESCE(SUM(v.views) FILTER (WHERE v.status = 'approved'), 0) AS views,
+               COALESCE(SUM(v.earned_cents), 0) AS earned,
+               COALESCE((SELECT SUM(p.amount_cents) FROM cf_payments p WHERE p.user_id = u.id), 0) AS paid
+        FROM cf_users u
+        LEFT JOIN cf_videos v ON v.user_id = u.id
+        WHERE u.role = 'clipper' AND u.pay_type = 'fixed'
+        GROUP BY u.id
+        ORDER BY views DESC`,
     ]);
 
   const spent = Number(settings.total_earned_cents);
@@ -311,14 +325,99 @@ export default async function AdminPage() {
                         {fmtUsd(owed)}
                       </td>
                       <td className="py-3">
-                        <PaymentForm
-                          action={recordPayment}
-                          userId={c.user_id}
-                        />
+                        <div className="space-y-2">
+                          <PaymentForm
+                            action={recordPayment}
+                            userId={c.user_id}
+                          />
+                          <PayTypeForm
+                            action={setPayType}
+                            userId={c.user_id}
+                            current="per_view"
+                            dealNote={c.deal_note}
+                          />
+                        </div>
                       </td>
                     </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* Fixed-rate creators */}
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+        <h2 className="text-lg font-semibold">Fixed-rate creators</h2>
+        <p className="mt-1 text-sm text-white/60">
+          People on flat deals agreed outside the campaign. Their videos are
+          view-tracked exactly like clippers&apos;, but they don&apos;t earn
+          from the RPM or use the campaign budget. Record what you pay them so
+          there&apos;s a ledger.
+        </p>
+        {fixedCreators.length === 0 ? (
+          <p className="mt-3 text-sm text-white/50">
+            Nobody on a fixed rate yet — use &quot;Move to fixed rate&quot; on
+            a clipper above.
+          </p>
+        ) : (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="text-xs uppercase tracking-wide text-white/40">
+                  <th className="py-2 pr-4 font-medium">Creator</th>
+                  <th className="py-2 pr-4 font-medium">Deal</th>
+                  <th className="py-2 pr-4 text-right font-medium">Videos</th>
+                  <th className="py-2 pr-4 text-right font-medium">Views</th>
+                  <th className="py-2 pr-4 text-right font-medium">Paid</th>
+                  <th className="py-2 font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {fixedCreators.map((c) => (
+                  <tr key={c.user_id}>
+                    <td className="max-w-[200px] py-3 pr-4">
+                      <p className="truncate font-medium">{c.display_name}</p>
+                      <p className="truncate text-xs text-white/50">
+                        {c.email}
+                      </p>
+                      {c.payout_method && (
+                        <p className="truncate text-xs text-cf-orange/80">
+                          {c.payout_method}
+                        </p>
+                      )}
+                    </td>
+                    <td className="max-w-[140px] py-3 pr-4">
+                      <span className="rounded-full bg-cf-orange/15 px-2.5 py-1 text-xs font-semibold text-cf-orange">
+                        {c.deal_note || "fixed rate"}
+                      </span>
+                    </td>
+                    <td className="py-3 pr-4 text-right tabular-nums">
+                      {c.videos}
+                    </td>
+                    <td className="py-3 pr-4 text-right font-semibold tabular-nums">
+                      {fmtViews(c.views)}
+                    </td>
+                    <td className="py-3 pr-4 text-right tabular-nums">
+                      {fmtUsd(c.paid)}
+                    </td>
+                    <td className="py-3">
+                      <div className="space-y-2">
+                        <PaymentForm
+                          action={recordPayment}
+                          userId={c.user_id}
+                        />
+                        <PayTypeForm
+                          action={setPayType}
+                          userId={c.user_id}
+                          current="fixed"
+                          dealNote={c.deal_note}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

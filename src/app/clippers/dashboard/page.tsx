@@ -45,10 +45,24 @@ export default async function Dashboard() {
   const paid = Number(paidRows[0]?.paid ?? 0);
   const owed = Math.max(0, earned - paid);
   const hasApprovedAccount = accounts.some((a) => a.status === "approved");
+  const isFixed = user.pay_type === "fixed";
   const budgetLeft = Math.max(
     0,
     Number(settings.budget_cents) - Number(settings.total_earned_cents),
   );
+
+  const statCards = isFixed
+    ? [
+        { label: "Total views", value: fmtViews(totalViews), hot: true },
+        { label: "Videos", value: String(videos.length) },
+        { label: "Paid out", value: fmtUsd(paid) },
+      ]
+    : [
+        { label: "Total views", value: fmtViews(totalViews) },
+        { label: "Earned", value: fmtUsd(earned) },
+        { label: "Paid out", value: fmtUsd(paid) },
+        { label: "Owed to you", value: fmtUsd(owed), hot: true },
+      ];
 
   return (
     <div className="space-y-10 py-8">
@@ -56,23 +70,29 @@ export default async function Dashboard() {
         <h1 className="text-2xl font-bold">
           Hey {user.display_name.split(" ")[0]}
         </h1>
-        <p className="mt-1 text-sm text-white/60">
-          Rate: {fmtUsd(settings.rpm_cents)} per 1K views · Campaign budget
-          remaining: {fmtUsd(budgetLeft)}
-          {!settings.campaign_active && (
-            <span className="ml-2 text-amber-400">· campaign paused</span>
-          )}
-        </p>
+        {isFixed ? (
+          <p className="mt-1 text-sm text-white/60">
+            You&apos;re on a fixed-rate deal
+            {user.deal_note && (
+              <span className="ml-2 rounded-full bg-cf-orange/15 px-2.5 py-0.5 text-xs font-semibold text-cf-orange">
+                {user.deal_note}
+              </span>
+            )}
+          </p>
+        ) : (
+          <p className="mt-1 text-sm text-white/60">
+            Rate: {fmtUsd(settings.rpm_cents)} per 1K views · Campaign budget
+            remaining: {fmtUsd(budgetLeft)}
+            {!settings.campaign_active && (
+              <span className="ml-2 text-amber-400">· campaign paused</span>
+            )}
+          </p>
+        )}
       </div>
 
       {/* Totals */}
-      <div className="grid gap-4 sm:grid-cols-4">
-        {[
-          { label: "Total views", value: fmtViews(totalViews) },
-          { label: "Earned", value: fmtUsd(earned) },
-          { label: "Paid out", value: fmtUsd(paid) },
-          { label: "Owed to you", value: fmtUsd(owed), hot: true },
-        ].map((c) => (
+      <div className={`grid gap-4 ${isFixed ? "sm:grid-cols-3" : "sm:grid-cols-4"}`}>
+        {statCards.map((c) => (
           <div
             key={c.label}
             className={`rounded-2xl border p-5 ${c.hot ? "border-cf-orange/50 bg-cf-orange/5" : "border-white/10 bg-white/[0.03]"}`}
@@ -153,7 +173,9 @@ export default async function Dashboard() {
                   <th className="py-2 pr-4 font-medium">Video</th>
                   <th className="py-2 pr-4 font-medium">Status</th>
                   <th className="py-2 pr-4 text-right font-medium">Views</th>
-                  <th className="py-2 text-right font-medium">Earned</th>
+                  {!isFixed && (
+                    <th className="py-2 text-right font-medium">Earned</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
@@ -180,9 +202,11 @@ export default async function Dashboard() {
                     <td className="py-3 pr-4 text-right tabular-nums">
                       {fmtViews(v.views)}
                     </td>
-                    <td className="py-3 text-right font-semibold tabular-nums">
-                      {fmtUsd(v.earned_cents)}
-                    </td>
+                    {!isFixed && (
+                      <td className="py-3 text-right font-semibold tabular-nums">
+                        {fmtUsd(v.earned_cents)}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

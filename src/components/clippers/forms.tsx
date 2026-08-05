@@ -183,6 +183,42 @@ export function RefreshButton({ action }: { action: Action }) {
   );
 }
 
+export function PayTypeForm({
+  action,
+  userId,
+  current,
+  dealNote,
+}: {
+  action: Action;
+  userId: number;
+  current: "per_view" | "fixed";
+  dealNote: string;
+}) {
+  const [state, formAction, pending] = useActionState(action, undefined);
+  const toFixed = current === "per_view";
+  return (
+    <form action={formAction} className="flex flex-wrap items-center gap-2">
+      <input type="hidden" name="user_id" value={userId} />
+      <input type="hidden" name="pay_type" value={toFixed ? "fixed" : "per_view"} />
+      {toFixed && (
+        <input
+          name="deal_note"
+          placeholder={'deal, e.g. "$50/week"'}
+          defaultValue={dealNote}
+          className="w-36 rounded-lg border border-white/15 bg-white/[0.06] px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:border-cf-orange"
+        />
+      )}
+      <button
+        disabled={pending}
+        className="rounded-full border border-cf-orange/40 bg-cf-orange/10 px-4 py-2 text-sm font-semibold text-cf-orange transition hover:bg-cf-orange hover:text-cf-black disabled:opacity-50"
+      >
+        {pending ? "…" : toFixed ? "Move to fixed rate" : "Move to per-view"}
+      </button>
+      <Feedback state={state} />
+    </form>
+  );
+}
+
 export function PaymentForm({
   action,
   userId,

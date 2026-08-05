@@ -97,6 +97,10 @@ async function migrate() {
       created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
     )`;
   await sql`INSERT INTO cf_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING`;
+  // Per-user pay model: 'per_view' (campaign RPM + budget) or 'fixed' (flat
+  // deal agreed off-platform — views tracked, no RPM accrual).
+  await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS pay_type TEXT NOT NULL DEFAULT 'per_view'`;
+  await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS deal_note TEXT NOT NULL DEFAULT ''`;
 }
 
 export function ensureSchema(): Promise<void> {
@@ -117,6 +121,8 @@ export type UserRow = {
   display_name: string;
   role: "clipper" | "admin";
   payout_method: string;
+  pay_type: "per_view" | "fixed";
+  deal_note: string;
 };
 
 export type AccountRow = {
