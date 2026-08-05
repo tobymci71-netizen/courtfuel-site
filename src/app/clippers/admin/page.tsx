@@ -56,6 +56,31 @@ type TopVideo = {
   pay_type: string;
 };
 
+type DrillUser = {
+  id: number;
+  display_name: string;
+  email: string;
+  pay_type: string;
+};
+
+type DrillAccount = {
+  id: number;
+  user_id: number;
+  handle: string;
+  url: string;
+  status: string;
+};
+
+type DrillVideo = {
+  account_id: number;
+  user_id: number;
+  url: string;
+  status: string;
+  views: number;
+  earned_cents: number;
+  last_checked: string | null;
+};
+
 function ApproveButtons({
   action,
   id,
@@ -127,6 +152,9 @@ export default async function AdminPage() {
     totals,
     topVideos,
     lastRefresh,
+    drillUsers,
+    drillAccounts,
+    drillVideos,
   ] = await Promise.all([
     getSettings(),
     sql<PendingAccount[]>`
@@ -177,6 +205,14 @@ export default async function AdminPage() {
       ORDER BY v.views DESC LIMIT 5`,
     sql<{ t: string | null }[]>`
       SELECT MAX(last_checked) AS t FROM cf_videos WHERE status = 'approved'`,
+    sql<DrillUser[]>`
+      SELECT id, display_name, email, pay_type
+      FROM cf_users WHERE role = 'clipper' ORDER BY display_name`,
+    sql<DrillAccount[]>`
+      SELECT id, user_id, handle, url, status FROM cf_accounts ORDER BY handle`,
+    sql<DrillVideo[]>`
+      SELECT account_id, user_id, url, status, views, earned_cents, last_checked
+      FROM cf_videos ORDER BY views DESC`,
   ]);
 
   const spent = Number(settings.total_earned_cents);
@@ -445,6 +481,160 @@ export default async function AdminPage() {
           </ul>
         </section>
       )}
+
+      {/* Everyone: accounts & videos drill-down */}
+      <section className="cf-fade-up cf-delay-4 cf-card p-6">
+        <h2 className="flex items-center text-lg font-semibold">
+          📋 Everyone&apos;s accounts &amp; videos
+        </h2>
+        <p className="mt-1 text-sm text-white/60">
+          Click a person to see every account and video under their email,
+          with views per video and their total.
+        </p>
+        {drillUsers.length === 0 ? (
+          <p className="mt-3 text-sm text-white/40">Nobody signed up yet.</p>
+        ) : (
+          <div className="mt-4 space-y-2">
+            {drillUsers.map((u) => {
+              const accounts = drillAccounts.filter(
+                (a) => a.user_id === u.id,
+              );
+              const userVideos = drillVideos.filter(
+                (v) => v.user_id === u.id,
+              );
+              const totalUserViews = userVideos
+                .filter((v) => v.status === "approved")
+                .reduce((s, v) => s + Number(v.views), 0);
+              return (
+                <details
+                  key={u.id}
+                  className="group rounded-xl border border-white/10 bg-cf-black/40 transition open:border-cf-orange/30"
+                >
+                  <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 px-5 py-4">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span
+                        className="text-cf-orange transition-transform duration-200 group-open:rotate-90"
+                        aria-hidden="true"
+                      >
+                        ▸
+                      </span>
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold">
+                          {u.display_name}
+                          {u.pay_type === "fixed" && (
+                            <span className="ml-2 rounded-full bg-cf-orange/15 px-2 py-0.5 text-xs font-semibold text-cf-orange">
+                              fixed rate
+                            </span>
+                          )}
+                        </p>
+                        <p className="truncate text-xs text-white/50">
+                          {u.email}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold tabular-nums">
+                        {fmtViews(totalUserViews)}
+                      </p>
+                      <p className="text-xs text-white/50">
+                        total views · {accounts.length}{" "}
+                        {accounts.length === 1 ? "account" : "accounts"} ·{" "}
+                        {userVideos.length}{" "}
+                        {userVideos.length === 1 ? "video" : "videos"}
+                      </p>
+                    </div>
+                  </summary>
+                  <div className="space-y-4 border-t border-white/10 px-5 py-4">
+                    {accounts.length === 0 && (
+                      <p className="text-sm text-white/40">
+                        No accounts submitted yet.
+                      </p>
+                    )}
+                    {accounts.map((acc) => {
+                      const accVideos = userVideos.filter(
+                        (v) => v.account_id === acc.id,
+                      );
+                      const accViews = accVideos
+                        .filter((v) => v.status === "approved")
+                        .reduce((s, v) => s + Number(v.views), 0);
+                      return (
+                        <div key={acc.id}>
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-sm">
+                              <a
+                                href={acc.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-semibold text-cf-orange hover:underline"
+                              >
+                                @{acc.handle}
+                              </a>
+                              <span
+                                className={`ml-2 rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${
+                                  acc.status === "approved"
+                                    ? "bg-emerald-500/15 text-emerald-400"
+                                    : acc.status === "rejected"
+                                      ? "bg-red-500/15 text-red-400"
+                                      : "bg-amber-500/15 text-amber-400"
+                                }`}
+                              >
+                                {acc.status}
+                              </span>
+                            </p>
+                            <p className="text-xs text-white/50">
+                              {fmtViews(accViews)} views on this account
+                            </p>
+                          </div>
+                          {accVideos.length > 0 && (
+                            <ul className="mt-2 divide-y divide-white/5 rounded-lg border border-white/10 bg-white/[0.02]">
+                              {accVideos.map((v) => (
+                                <li
+                                  key={v.url}
+                                  className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5"
+                                >
+                                  <div className="min-w-0">
+                                    <a
+                                      href={v.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="block max-w-[320px] truncate text-sm text-white/85 hover:text-cf-orange"
+                                    >
+                                      {v.url.replace(
+                                        "https://www.tiktok.com/",
+                                        "",
+                                      )}
+                                    </a>
+                                    <p className="text-xs text-white/40 capitalize">
+                                      {v.status}
+                                      {v.last_checked &&
+                                        ` · checked ${new Date(v.last_checked).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-sm font-bold tabular-nums">
+                                      {fmtViews(v.views)}
+                                    </p>
+                                    {u.pay_type === "per_view" &&
+                                      Number(v.earned_cents) > 0 && (
+                                        <p className="text-xs text-white/50">
+                                          {fmtUsd(v.earned_cents)}
+                                        </p>
+                                      )}
+                                  </div>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </details>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {/* Per-view clippers */}
       <section className="cf-fade-up cf-delay-4 cf-card p-6">
