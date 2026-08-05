@@ -118,6 +118,12 @@ export async function refreshViews(): Promise<RefreshResult> {
     FROM cf_settings WHERE id = 1`;
   result.budgetExhausted =
     Number(s.total_earned_cents) >= Number(s.budget_cents);
+
+  // Record a history point so the admin analytics graph can show growth.
+  await sql`
+    INSERT INTO cf_snapshots (total_views)
+    SELECT COALESCE(SUM(views), 0) FROM cf_videos WHERE status = 'approved'`;
+
   return result;
 }
 

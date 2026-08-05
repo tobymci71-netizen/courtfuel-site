@@ -81,6 +81,128 @@ type DrillVideo = {
   last_checked: string | null;
 };
 
+type AccountSummary = {
+  id: number;
+  handle: string;
+  url: string;
+  status: string;
+  display_name: string;
+  videos: string;
+  views: string;
+};
+
+type Snapshot = { captured_at: string; total_views: string };
+
+function fmtCompact(n: number) {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}K`;
+  return String(n);
+}
+
+/* Server-rendered SVG area chart of total views over time. */
+function ViewsChart({ snapshots }: { snapshots: Snapshot[] }) {
+  const pts = snapshots.map((s) => ({
+    t: new Date(s.captured_at).getTime(),
+    v: Number(s.total_views),
+  }));
+  if (pts.length < 2) {
+    return (
+      <p className="mt-4 rounded-xl border border-white/10 bg-cf-black/40 px-5 py-8 text-center text-sm text-white/50">
+        The graph draws itself from view refreshes — after a couple of days of
+        the daily auto-refresh (or a few manual refreshes) you&apos;ll see the
+        growth curve here.
+      </p>
+    );
+  }
+
+  const W = 800;
+  const H = 240;
+  const PAD_L = 52;
+  const PAD_R = 16;
+  const PAD_T = 18;
+  const PAD_B = 30;
+  const minT = pts[0].t;
+  const maxT = pts[pts.length - 1].t;
+  const maxV = Math.max(...pts.map((p) => p.v), 1) * 1.08;
+  const x = (t: number) =>
+    PAD_L + ((t - minT) / Math.max(1, maxT - minT)) * (W - PAD_L - PAD_R);
+  const y = (v: number) => H - PAD_B - (v / maxV) * (H - PAD_T - PAD_B);
+
+  const line = pts
+    .map((p, i) => `${i === 0 ? "M" : "L"}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`)
+    .join(" ");
+  const area = `${line} L${x(maxT).toFixed(1)},${H - PAD_B} L${x(minT).toFixed(1)},${H - PAD_B} Z`;
+  const last = pts[pts.length - 1];
+  const gridVals = [0.25, 0.5, 0.75, 1].map((f) => maxV * f);
+  const fmtDate = (t: number) =>
+    new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      className="mt-4 w-full"
+      role="img"
+      aria-label="Total views over time"
+    >
+      <defs>
+        <linearGradient id="cfArea" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ff6b1a" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#ff6b1a" stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      {gridVals.map((v) => (
+        <g key={v}>
+          <line
+            x1={PAD_L}
+            x2={W - PAD_R}
+            y1={y(v)}
+            y2={y(v)}
+            stroke="rgba(255,255,255,0.07)"
+            strokeDasharray="4 4"
+          />
+          <text
+            x={PAD_L - 8}
+            y={y(v) + 4}
+            textAnchor="end"
+            fontSize="11"
+            fill="rgba(255,255,255,0.4)"
+          >
+            {fmtCompact(Math.round(v))}
+          </text>
+        </g>
+      ))}
+      <path d={area} fill="url(#cfArea)" />
+      <path
+        d={line}
+        fill="none"
+        stroke="#ff6b1a"
+        strokeWidth="2.5"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <circle cx={x(last.t)} cy={y(last.v)} r="4.5" fill="#ff6b1a" />
+      <circle cx={x(last.t)} cy={y(last.v)} r="8" fill="#ff6b1a" opacity="0.25" />
+      <text
+        x={PAD_L}
+        y={H - 8}
+        fontSize="11"
+        fill="rgba(255,255,255,0.4)"
+      >
+        {fmtDate(minT)}
+      </text>
+      <text
+        x={W - PAD_R}
+        y={H - 8}
+        textAnchor="end"
+        fontSize="11"
+        fill="rgba(255,255,255,0.4)"
+      >
+        {fmtDate(maxT)}
+      </text>
+    </svg>
+  );
+}
+
 function ApproveButtons({
   action,
   id,
@@ -155,6 +277,8 @@ export default async function AdminPage() {
     drillUsers,
     drillAccounts,
     drillVideos,
+    accountSummaries,
+    snapshots,
   ] = await Promise.all([
     getSettings(),
     sql<PendingAccount[]>`
@@ -213,6 +337,18 @@ export default async function AdminPage() {
     sql<DrillVideo[]>`
       SELECT account_id, user_id, url, status, views, earned_cents, last_checked
       FROM cf_videos ORDER BY views DESC`,
+    sql<AccountSummary[]>`
+      SELECT a.id, a.handle, a.url, a.status, u.display_name,
+             COUNT(v.id) FILTER (WHERE v.status = 'approved') AS videos,
+             COALESCE(SUM(v.views) FILTER (WHERE v.status = 'approved'), 0) AS views
+      FROM cf_accounts a
+      JOIN cf_users u ON u.id = a.user_id
+      LEFT JOIN cf_videos v ON v.account_id = a.id
+      GROUP BY a.id, u.display_name
+      ORDER BY views DESC, a.handle`,
+    sql<Snapshot[]>`
+      SELECT captured_at, total_views FROM cf_snapshots
+      ORDER BY captured_at ASC LIMIT 500`,
   ]);
 
   const spent = Number(settings.total_earned_cents);
@@ -305,6 +441,8 @@ export default async function AdminPage() {
       {/* Quick jump */}
       <nav className="cf-fade-up cf-delay-1 -mt-2 flex flex-wrap gap-2 text-sm">
         {[
+          ["#analytics", "📈 Analytics"],
+          ["#accounts", "📱 Accounts"],
           ["#approvals", "⏳ Approvals"],
           ["#creators", "👥 Creator accounts"],
           ["#top", "🏆 Top videos"],
@@ -344,6 +482,106 @@ export default async function AdminPage() {
           </a>
         ))}
       </div>
+
+      {/* Analytics graph */}
+      <section id="analytics" className="cf-fade-up cf-delay-2 cf-card scroll-mt-24 p-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
+              📈 Total views over time
+            </h2>
+            <p className="mt-1 text-sm text-white/60">
+              All approved videos across every registered account, recorded at
+              each view refresh.
+            </p>
+          </div>
+          <p className="text-3xl font-bold tabular-nums text-cf-orange">
+            {fmtViews(totalViews)}
+          </p>
+        </div>
+        <ViewsChart snapshots={snapshots} />
+      </section>
+
+      {/* Per-account views */}
+      <section id="accounts" className="cf-fade-up cf-delay-2 cf-card scroll-mt-24 p-6">
+        <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
+          📱 Views by account
+        </h2>
+        <p className="mt-1 text-sm text-white/60">
+          Every TikTok account registered on the site, ranked by views from
+          approved videos.
+        </p>
+        {accountSummaries.length === 0 ? (
+          <p className="mt-3 text-sm text-white/40">No accounts yet.</p>
+        ) : (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="text-xs uppercase tracking-wide text-white/40">
+                  <th className="py-2 pr-4 font-medium">Account</th>
+                  <th className="py-2 pr-4 font-medium">Owner</th>
+                  <th className="py-2 pr-4 font-medium">Status</th>
+                  <th className="py-2 pr-4 text-right font-medium">Videos</th>
+                  <th className="py-2 text-right font-medium">Views</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {accountSummaries.map((a) => (
+                  <tr key={a.id} className="transition hover:bg-white/[0.02]">
+                    <td className="py-3 pr-4">
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-cf-orange hover:underline"
+                      >
+                        @{a.handle}
+                      </a>
+                    </td>
+                    <td className="max-w-[180px] truncate py-3 pr-4 text-white/70">
+                      {a.display_name}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span
+                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${
+                          a.status === "approved"
+                            ? "bg-emerald-500/15 text-emerald-400"
+                            : a.status === "rejected"
+                              ? "bg-red-500/15 text-red-400"
+                              : "bg-amber-500/15 text-amber-400"
+                        }`}
+                      >
+                        {a.status}
+                      </span>
+                    </td>
+                    <td className="py-3 pr-4 text-right tabular-nums">
+                      {a.videos}
+                    </td>
+                    <td className="py-3 text-right font-semibold tabular-nums">
+                      {fmtViews(a.views)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-cf-orange/30">
+                  <td colSpan={3} className="py-3 pr-4 font-bold">
+                    All accounts total
+                  </td>
+                  <td className="py-3 pr-4 text-right font-bold tabular-nums">
+                    {accountSummaries.reduce((s, a) => s + Number(a.videos), 0)}
+                  </td>
+                  <td className="py-3 text-right text-lg font-bold tabular-nums text-cf-orange">
+                    {fmtViews(
+                      accountSummaries.reduce((s, a) => s + Number(a.views), 0),
+                    )}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </section>
 
       {/* Budget + settings side by side */}
       <div id="settings" className="cf-fade-up cf-delay-2 grid scroll-mt-24 gap-6 lg:grid-cols-2">

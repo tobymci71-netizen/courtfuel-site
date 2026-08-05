@@ -101,6 +101,13 @@ async function migrate() {
   // deal agreed off-platform — views tracked, no RPM accrual).
   await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS pay_type TEXT NOT NULL DEFAULT 'per_view'`;
   await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS deal_note TEXT NOT NULL DEFAULT ''`;
+  // View history: one row per refresh so the admin can graph growth.
+  await sql`
+    CREATE TABLE IF NOT EXISTS cf_snapshots (
+      id          SERIAL PRIMARY KEY,
+      captured_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      total_views BIGINT NOT NULL DEFAULT 0
+    )`;
   // Structured fixed-rate deal: amount + cadence + when the deal started.
   await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS deal_amount_cents BIGINT NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS deal_period TEXT NOT NULL DEFAULT 'weekly'`;
