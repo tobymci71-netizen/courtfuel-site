@@ -148,11 +148,16 @@ export default async function Dashboard() {
       <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
         <h2 className="text-lg font-semibold">Your videos</h2>
         <p className="mt-1 text-sm text-white/60">
-          Paste the link of each CourtFuel video or slideshow you post. Views
-          refresh automatically.
+          {isFixed
+            ? "No links needed — every video you post on your approved account is found and tracked automatically."
+            : "Paste the link of each CourtFuel video or slideshow you post. Views refresh automatically."}
         </p>
         <div className="mt-4">
-          {hasApprovedAccount ? (
+          {isFixed ? (
+            <p className="rounded-lg bg-emerald-500/10 px-3 py-2 text-sm text-emerald-400">
+              ✓ Auto-tracking is on — just post.
+            </p>
+          ) : hasApprovedAccount ? (
             <SingleFieldForm
               action={submitVideo}
               name="url"

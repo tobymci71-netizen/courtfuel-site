@@ -287,6 +287,7 @@ export async function adminRefreshViews(
     const bits = [
       `Checked ${r.checked} videos`,
       `updated ${r.updated}`,
+      `auto-scanned ${r.autoScanned} posts from fixed accounts`,
       `added $${(r.earnedCentsAdded / 100).toFixed(2)} in earnings`,
     ];
     if (r.missing) bits.push(`${r.missing} unreadable`);

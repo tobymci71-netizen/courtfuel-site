@@ -45,6 +45,8 @@ export function parseProfileUrl(
 // --- View fetching via Apify ----------------------------------------------
 
 const APIFY_ACTOR = "clockworks~tiktok-video-scraper";
+const APIFY_PROFILE_ACTOR = "clockworks~tiktok-profile-scraper";
+const POSTS_PER_PROFILE = 20;
 
 type ApifyItem = {
   id?: string;
@@ -100,4 +102,62 @@ export async function fetchViewCounts(
     }
   }
   return map;
+}
+
+// --- Whole-account scanning (fixed-rate creators) ---------------------------
+
+export type ProfilePost = {
+  handle: string;
+  tiktokId: string;
+  views: number;
+  cleanUrl: string;
+};
+
+// Scrapes the latest posts (videos AND slideshows) from whole TikTok
+// profiles, so fixed-rate creators never have to submit links manually.
+export async function fetchProfilePosts(
+  handles: string[],
+): Promise<ProfilePost[]> {
+  const token = process.env.APIFY_TOKEN;
+  if (!token) throw new Error("APIFY_TOKEN is not set.");
+  if (handles.length === 0) return [];
+
+  const base = process.env.APIFY_BASE_URL ?? "https://api.apify.com";
+  const res = await fetch(
+    `${base}/v2/acts/${APIFY_PROFILE_ACTOR}/run-sync-get-dataset-items?token=${token}&timeout=280`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        profiles: handles,
+        resultsPerPage: POSTS_PER_PROFILE,
+        profileSorting: "latest",
+      }),
+      cache: "no-store",
+    },
+  );
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(
+      `Apify profile scan failed (${res.status}): ${body.slice(0, 300)}`,
+    );
+  }
+  const items = (await res.json()) as ApifyItem[];
+
+  const posts: ProfilePost[] = [];
+  for (const item of items) {
+    const handle = String(item.authorMeta?.name ?? "").toLowerCase();
+    const id = item.id ? String(item.id) : null;
+    const views = Number(item.playCount ?? 0);
+    if (!handle || !id || !Number.isFinite(views)) continue;
+    const src = String(item.webVideoUrl ?? "");
+    const kind = /\/photo\//i.test(src) ? "photo" : "video";
+    posts.push({
+      handle,
+      tiktokId: id,
+      views,
+      cleanUrl: `https://www.tiktok.com/@${handle}/${kind}/${id}`,
+    });
+  }
+  return posts;
 }

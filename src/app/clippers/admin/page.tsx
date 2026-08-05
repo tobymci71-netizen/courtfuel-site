@@ -16,6 +16,15 @@ import {
   RefreshButton,
   SettingsForm,
 } from "@/components/clippers/forms";
+import {
+  AdminTabs,
+  ApproveButtons,
+  CountBadge,
+  StatusPill,
+  ViewsChart,
+} from "@/components/clippers/admin-ui";
+
+export const maxDuration = 300;
 
 type PendingAccount = {
   id: number;
@@ -37,10 +46,6 @@ type ClipperSummary = {
   display_name: string;
   email: string;
   payout_method: string;
-  deal_amount_cents: string;
-  deal_period: string;
-  deal_started_at: string | null;
-  last_paid_at: string | null;
   videos: string;
   views: string;
   earned: string;
@@ -53,16 +58,9 @@ type TopVideo = {
   earned_cents: number;
   handle: string;
   display_name: string;
-  pay_type: string;
 };
 
-type DrillUser = {
-  id: number;
-  display_name: string;
-  email: string;
-  pay_type: string;
-};
-
+type DrillUser = { id: number; display_name: string; email: string };
 type DrillAccount = {
   id: number;
   user_id: number;
@@ -70,7 +68,6 @@ type DrillAccount = {
   url: string;
   status: string;
 };
-
 type DrillVideo = {
   account_id: number;
   user_id: number;
@@ -80,7 +77,6 @@ type DrillVideo = {
   earned_cents: number;
   last_checked: string | null;
 };
-
 type AccountSummary = {
   id: number;
   handle: string;
@@ -90,176 +86,9 @@ type AccountSummary = {
   videos: string;
   views: string;
 };
+type Snapshot = { captured_at: string; value: string };
 
-type Snapshot = { captured_at: string; total_views: string };
-
-function fmtCompact(n: number) {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(n >= 10_000 ? 0 : 1)}K`;
-  return String(n);
-}
-
-/* Server-rendered SVG area chart of total views over time. */
-function ViewsChart({ snapshots }: { snapshots: Snapshot[] }) {
-  const pts = snapshots.map((s) => ({
-    t: new Date(s.captured_at).getTime(),
-    v: Number(s.total_views),
-  }));
-  if (pts.length < 2) {
-    return (
-      <p className="mt-4 rounded-xl border border-white/10 bg-cf-black/40 px-5 py-8 text-center text-sm text-white/50">
-        The graph draws itself from view refreshes — after a couple of days of
-        the daily auto-refresh (or a few manual refreshes) you&apos;ll see the
-        growth curve here.
-      </p>
-    );
-  }
-
-  const W = 800;
-  const H = 240;
-  const PAD_L = 52;
-  const PAD_R = 16;
-  const PAD_T = 18;
-  const PAD_B = 30;
-  const minT = pts[0].t;
-  const maxT = pts[pts.length - 1].t;
-  const maxV = Math.max(...pts.map((p) => p.v), 1) * 1.08;
-  const x = (t: number) =>
-    PAD_L + ((t - minT) / Math.max(1, maxT - minT)) * (W - PAD_L - PAD_R);
-  const y = (v: number) => H - PAD_B - (v / maxV) * (H - PAD_T - PAD_B);
-
-  const line = pts
-    .map((p, i) => `${i === 0 ? "M" : "L"}${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`)
-    .join(" ");
-  const area = `${line} L${x(maxT).toFixed(1)},${H - PAD_B} L${x(minT).toFixed(1)},${H - PAD_B} Z`;
-  const last = pts[pts.length - 1];
-  const gridVals = [0.25, 0.5, 0.75, 1].map((f) => maxV * f);
-  const fmtDate = (t: number) =>
-    new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
-
-  return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      className="mt-4 w-full"
-      role="img"
-      aria-label="Total views over time"
-    >
-      <defs>
-        <linearGradient id="cfArea" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#ff6b1a" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="#ff6b1a" stopOpacity="0.02" />
-        </linearGradient>
-      </defs>
-      {gridVals.map((v) => (
-        <g key={v}>
-          <line
-            x1={PAD_L}
-            x2={W - PAD_R}
-            y1={y(v)}
-            y2={y(v)}
-            stroke="rgba(255,255,255,0.07)"
-            strokeDasharray="4 4"
-          />
-          <text
-            x={PAD_L - 8}
-            y={y(v) + 4}
-            textAnchor="end"
-            fontSize="11"
-            fill="rgba(255,255,255,0.4)"
-          >
-            {fmtCompact(Math.round(v))}
-          </text>
-        </g>
-      ))}
-      <path d={area} fill="url(#cfArea)" />
-      <path
-        d={line}
-        fill="none"
-        stroke="#ff6b1a"
-        strokeWidth="2.5"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-      <circle cx={x(last.t)} cy={y(last.v)} r="4.5" fill="#ff6b1a" />
-      <circle cx={x(last.t)} cy={y(last.v)} r="8" fill="#ff6b1a" opacity="0.25" />
-      <text
-        x={PAD_L}
-        y={H - 8}
-        fontSize="11"
-        fill="rgba(255,255,255,0.4)"
-      >
-        {fmtDate(minT)}
-      </text>
-      <text
-        x={W - PAD_R}
-        y={H - 8}
-        textAnchor="end"
-        fontSize="11"
-        fill="rgba(255,255,255,0.4)"
-      >
-        {fmtDate(maxT)}
-      </text>
-    </svg>
-  );
-}
-
-function ApproveButtons({
-  action,
-  id,
-}: {
-  action: (formData: FormData) => Promise<void>;
-  id: number;
-}) {
-  return (
-    <div className="flex shrink-0 gap-2">
-      <form action={action}>
-        <input type="hidden" name="id" value={id} />
-        <input type="hidden" name="decision" value="approved" />
-        <button className="rounded-full bg-emerald-500/15 px-4 py-1.5 text-sm font-semibold text-emerald-400 transition hover:bg-emerald-500/25">
-          Approve
-        </button>
-      </form>
-      <form action={action}>
-        <input type="hidden" name="id" value={id} />
-        <input type="hidden" name="decision" value="rejected" />
-        <button className="rounded-full bg-red-500/15 px-4 py-1.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/25">
-          Reject
-        </button>
-      </form>
-    </div>
-  );
-}
-
-function CountBadge({ n, color = "orange" }: { n: number; color?: string }) {
-  if (n === 0) return null;
-  return (
-    <span
-      className={`ml-2 rounded-full px-2 py-0.5 text-xs font-bold ${
-        color === "red"
-          ? "bg-red-500 text-white"
-          : "bg-cf-orange text-cf-black"
-      }`}
-    >
-      {n}
-    </span>
-  );
-}
-
-// Next payment due for a fixed deal: last payment (or deal start) + period.
-function nextDue(c: ClipperSummary): { label: string; overdue: boolean } {
-  const base = c.last_paid_at ?? c.deal_started_at;
-  if (!base) return { label: "—", overdue: false };
-  const d = new Date(base);
-  if (c.deal_period === "monthly") d.setMonth(d.getMonth() + 1);
-  else d.setDate(d.getDate() + 7);
-  const overdue = d.getTime() <= Date.now();
-  return {
-    label: d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }),
-    overdue,
-  };
-}
-
-export default async function AdminPage() {
+export default async function AdminRpmPage() {
   const user = await getUser();
   if (!user) redirect("/clippers/login");
   if (user.role !== "admin") redirect("/clippers/dashboard");
@@ -270,7 +99,6 @@ export default async function AdminPage() {
     pendingAccounts,
     pendingVideos,
     clippers,
-    fixedCreators,
     totals,
     topVideos,
     lastRefresh,
@@ -284,17 +112,17 @@ export default async function AdminPage() {
     sql<PendingAccount[]>`
       SELECT a.id, a.url, a.handle, u.email, u.display_name
       FROM cf_accounts a JOIN cf_users u ON u.id = a.user_id
-      WHERE a.status = 'pending' ORDER BY a.created_at`,
+      WHERE a.status = 'pending' AND u.pay_type = 'per_view'
+      ORDER BY a.created_at`,
     sql<PendingVideo[]>`
       SELECT v.id, v.url, a.handle, u.display_name
       FROM cf_videos v
       JOIN cf_accounts a ON a.id = v.account_id
       JOIN cf_users u ON u.id = v.user_id
-      WHERE v.status = 'pending' ORDER BY v.created_at`,
+      WHERE v.status = 'pending' AND u.pay_type = 'per_view'
+      ORDER BY v.created_at`,
     sql<ClipperSummary[]>`
       SELECT u.id AS user_id, u.display_name, u.email, u.payout_method,
-             u.deal_amount_cents, u.deal_period, u.deal_started_at,
-             (SELECT MAX(p.created_at) FROM cf_payments p WHERE p.user_id = u.id) AS last_paid_at,
              COUNT(v.id) FILTER (WHERE v.status = 'approved') AS videos,
              COALESCE(SUM(v.views) FILTER (WHERE v.status = 'approved'), 0) AS views,
              COALESCE(SUM(v.earned_cents), 0) AS earned,
@@ -304,39 +132,30 @@ export default async function AdminPage() {
       WHERE u.role = 'clipper' AND u.pay_type = 'per_view'
       GROUP BY u.id
       ORDER BY earned DESC`,
-    sql<ClipperSummary[]>`
-      SELECT u.id AS user_id, u.display_name, u.email, u.payout_method,
-             u.deal_amount_cents, u.deal_period, u.deal_started_at,
-             (SELECT MAX(p.created_at) FROM cf_payments p WHERE p.user_id = u.id) AS last_paid_at,
-             COUNT(v.id) FILTER (WHERE v.status = 'approved') AS videos,
-             COALESCE(SUM(v.views) FILTER (WHERE v.status = 'approved'), 0) AS views,
-             COALESCE(SUM(v.earned_cents), 0) AS earned,
-             COALESCE((SELECT SUM(p.amount_cents) FROM cf_payments p WHERE p.user_id = u.id), 0) AS paid
-      FROM cf_users u
-      LEFT JOIN cf_videos v ON v.user_id = u.id
-      WHERE u.role = 'clipper' AND u.pay_type = 'fixed'
-      GROUP BY u.id
-      ORDER BY views DESC`,
     sql<{ views: string; n: string }[]>`
-      SELECT COALESCE(SUM(views), 0) AS views, COUNT(*) AS n
-      FROM cf_videos WHERE status = 'approved'`,
+      SELECT COALESCE(SUM(v.views), 0) AS views, COUNT(*) AS n
+      FROM cf_videos v JOIN cf_users u ON u.id = v.user_id
+      WHERE v.status = 'approved' AND u.pay_type = 'per_view'`,
     sql<TopVideo[]>`
-      SELECT v.url, v.views, v.earned_cents, a.handle, u.display_name, u.pay_type
+      SELECT v.url, v.views, v.earned_cents, a.handle, u.display_name
       FROM cf_videos v
       JOIN cf_accounts a ON a.id = v.account_id
       JOIN cf_users u ON u.id = v.user_id
-      WHERE v.status = 'approved' AND v.views > 0
+      WHERE v.status = 'approved' AND v.views > 0 AND u.pay_type = 'per_view'
       ORDER BY v.views DESC LIMIT 5`,
     sql<{ t: string | null }[]>`
       SELECT MAX(last_checked) AS t FROM cf_videos WHERE status = 'approved'`,
     sql<DrillUser[]>`
-      SELECT id, display_name, email, pay_type
-      FROM cf_users WHERE role = 'clipper' ORDER BY display_name`,
+      SELECT id, display_name, email FROM cf_users
+      WHERE role = 'clipper' AND pay_type = 'per_view' ORDER BY display_name`,
     sql<DrillAccount[]>`
-      SELECT id, user_id, handle, url, status FROM cf_accounts ORDER BY handle`,
+      SELECT a.id, a.user_id, a.handle, a.url, a.status
+      FROM cf_accounts a JOIN cf_users u ON u.id = a.user_id
+      WHERE u.pay_type = 'per_view' ORDER BY a.handle`,
     sql<DrillVideo[]>`
-      SELECT account_id, user_id, url, status, views, earned_cents, last_checked
-      FROM cf_videos ORDER BY views DESC`,
+      SELECT v.account_id, v.user_id, v.url, v.status, v.views, v.earned_cents, v.last_checked
+      FROM cf_videos v JOIN cf_users u ON u.id = v.user_id
+      WHERE u.pay_type = 'per_view' ORDER BY v.views DESC`,
     sql<AccountSummary[]>`
       SELECT a.id, a.handle, a.url, a.status, u.display_name,
              COUNT(v.id) FILTER (WHERE v.status = 'approved') AS videos,
@@ -344,10 +163,11 @@ export default async function AdminPage() {
       FROM cf_accounts a
       JOIN cf_users u ON u.id = a.user_id
       LEFT JOIN cf_videos v ON v.account_id = a.id
+      WHERE u.pay_type = 'per_view'
       GROUP BY a.id, u.display_name
       ORDER BY views DESC, a.handle`,
     sql<Snapshot[]>`
-      SELECT captured_at, total_views FROM cf_snapshots
+      SELECT captured_at, rpm_views AS value FROM cf_snapshots
       ORDER BY captured_at ASC LIMIT 500`,
   ]);
 
@@ -362,7 +182,6 @@ export default async function AdminPage() {
   const totalViews = Number(totals[0]?.views ?? 0);
   const approvedCount = Number(totals[0]?.n ?? 0);
   const pendingCount = pendingAccounts.length + pendingVideos.length;
-  const fixedDueCount = fixedCreators.filter((c) => nextDue(c).overdue).length;
   const refreshedAt = lastRefresh[0]?.t
     ? new Date(lastRefresh[0].t).toLocaleString("en-GB", {
         day: "numeric",
@@ -375,7 +194,7 @@ export default async function AdminPage() {
   const kpis = [
     {
       icon: "👀",
-      label: "Total views",
+      label: "RPM views",
       value: fmtViews(totalViews),
       sub: `${approvedCount} live videos`,
       href: "#creators",
@@ -404,12 +223,11 @@ export default async function AdminPage() {
       href: "#approvals",
     },
     {
-      icon: "🤝",
-      label: "Fixed-rate due",
-      value: String(fixedDueCount),
-      sub: `${fixedCreators.length} on fixed deals`,
-      alert: fixedDueCount > 0,
-      href: "#fixed",
+      icon: "💵",
+      label: "Rate",
+      value: fmtUsd(settings.rpm_cents),
+      sub: "per 1K views",
+      href: "#settings",
     },
   ];
 
@@ -438,27 +256,9 @@ export default async function AdminPage() {
         <RefreshButton action={adminRefreshViews} />
       </div>
 
-      {/* Quick jump */}
-      <nav className="cf-fade-up cf-delay-1 -mt-2 flex flex-wrap gap-2 text-sm">
-        {[
-          ["#analytics", "📈 Analytics"],
-          ["#accounts", "📱 Accounts"],
-          ["#approvals", "⏳ Approvals"],
-          ["#creators", "👥 Creator accounts"],
-          ["#top", "🏆 Top videos"],
-          ["#clippers", "✂️ Clippers"],
-          ["#fixed", "🤝 Fixed deals"],
-          ["#settings", "⚙️ Settings"],
-        ].map(([href, label]) => (
-          <a
-            key={href}
-            href={href}
-            className="rounded-full border border-white/15 bg-white/[0.04] px-4 py-1.5 font-medium text-white/70 transition hover:border-cf-orange/50 hover:text-white"
-          >
-            {label}
-          </a>
-        ))}
-      </nav>
+      <div className="cf-fade-up cf-delay-1">
+        <AdminTabs active="rpm" />
+      </div>
 
       {/* KPI tiles */}
       <div className="cf-fade-up cf-delay-1 grid grid-cols-2 gap-4 lg:grid-cols-5">
@@ -483,107 +283,25 @@ export default async function AdminPage() {
         ))}
       </div>
 
-      {/* Analytics graph */}
+      {/* Analytics */}
       <section id="analytics" className="cf-fade-up cf-delay-2 cf-card scroll-mt-24 p-6">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
-              📈 Total views over time
+              📈 RPM campaign views over time
             </h2>
             <p className="mt-1 text-sm text-white/60">
-              All approved videos across every registered account, recorded at
-              each view refresh.
+              Approved videos from per-view clippers, recorded at each refresh.
             </p>
           </div>
           <p className="text-3xl font-bold tabular-nums text-cf-orange">
             {fmtViews(totalViews)}
           </p>
         </div>
-        <ViewsChart snapshots={snapshots} />
+        <ViewsChart points={snapshots} />
       </section>
 
-      {/* Per-account views */}
-      <section id="accounts" className="cf-fade-up cf-delay-2 cf-card scroll-mt-24 p-6">
-        <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
-          📱 Views by account
-        </h2>
-        <p className="mt-1 text-sm text-white/60">
-          Every TikTok account registered on the site, ranked by views from
-          approved videos.
-        </p>
-        {accountSummaries.length === 0 ? (
-          <p className="mt-3 text-sm text-white/40">No accounts yet.</p>
-        ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="text-xs uppercase tracking-wide text-white/40">
-                  <th className="py-2 pr-4 font-medium">Account</th>
-                  <th className="py-2 pr-4 font-medium">Owner</th>
-                  <th className="py-2 pr-4 font-medium">Status</th>
-                  <th className="py-2 pr-4 text-right font-medium">Videos</th>
-                  <th className="py-2 text-right font-medium">Views</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/10">
-                {accountSummaries.map((a) => (
-                  <tr key={a.id} className="transition hover:bg-white/[0.02]">
-                    <td className="py-3 pr-4">
-                      <a
-                        href={a.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-semibold text-cf-orange hover:underline"
-                      >
-                        @{a.handle}
-                      </a>
-                    </td>
-                    <td className="max-w-[180px] truncate py-3 pr-4 text-white/70">
-                      {a.display_name}
-                    </td>
-                    <td className="py-3 pr-4">
-                      <span
-                        className={`rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${
-                          a.status === "approved"
-                            ? "bg-emerald-500/15 text-emerald-400"
-                            : a.status === "rejected"
-                              ? "bg-red-500/15 text-red-400"
-                              : "bg-amber-500/15 text-amber-400"
-                        }`}
-                      >
-                        {a.status}
-                      </span>
-                    </td>
-                    <td className="py-3 pr-4 text-right tabular-nums">
-                      {a.videos}
-                    </td>
-                    <td className="py-3 text-right font-semibold tabular-nums">
-                      {fmtViews(a.views)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="border-t-2 border-cf-orange/30">
-                  <td colSpan={3} className="py-3 pr-4 font-bold">
-                    All accounts total
-                  </td>
-                  <td className="py-3 pr-4 text-right font-bold tabular-nums">
-                    {accountSummaries.reduce((s, a) => s + Number(a.videos), 0)}
-                  </td>
-                  <td className="py-3 text-right text-lg font-bold tabular-nums text-cf-orange">
-                    {fmtViews(
-                      accountSummaries.reduce((s, a) => s + Number(a.views), 0),
-                    )}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        )}
-      </section>
-
-      {/* Budget + settings side by side */}
+      {/* Budget + settings */}
       <div id="settings" className="cf-fade-up cf-delay-2 grid scroll-mt-24 gap-6 lg:grid-cols-2">
         <section className="cf-card p-6">
           <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
@@ -610,8 +328,7 @@ export default async function AdminPage() {
           </div>
           {remaining === 0 && budget > 0 && (
             <p className="mt-3 text-sm text-red-400">
-              Budget fully used — earnings paused. Raise it in settings to
-              resume.
+              Budget fully used — earnings paused. Raise it to resume.
             </p>
           )}
         </section>
@@ -631,7 +348,7 @@ export default async function AdminPage() {
         </section>
       </div>
 
-      {/* Approvals side by side */}
+      {/* Approvals */}
       <div id="approvals" className="cf-fade-up cf-delay-3 grid scroll-mt-24 gap-6 lg:grid-cols-2">
         <section className="cf-card p-6">
           <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
@@ -702,26 +419,133 @@ export default async function AdminPage() {
         </section>
       </div>
 
-      {/* Everyone: accounts & videos drill-down */}
+      {/* Views by account */}
+      <section id="accounts" className="cf-fade-up cf-delay-3 cf-card scroll-mt-24 p-6">
+        <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
+          📱 Views by account
+        </h2>
+        <p className="mt-1 text-sm text-white/60">
+          Per-view clippers&apos; accounts, ranked by approved-video views.
+        </p>
+        {accountSummaries.length === 0 ? (
+          <p className="mt-3 text-sm text-white/40">No accounts yet.</p>
+        ) : (
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="text-xs uppercase tracking-wide text-white/40">
+                  <th className="py-2 pr-4 font-medium">Account</th>
+                  <th className="py-2 pr-4 font-medium">Owner</th>
+                  <th className="py-2 pr-4 font-medium">Status</th>
+                  <th className="py-2 pr-4 text-right font-medium">Videos</th>
+                  <th className="py-2 text-right font-medium">Views</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {accountSummaries.map((a) => (
+                  <tr key={a.id} className="transition hover:bg-white/[0.02]">
+                    <td className="py-3 pr-4">
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-semibold text-cf-orange hover:underline"
+                      >
+                        @{a.handle}
+                      </a>
+                    </td>
+                    <td className="max-w-[180px] truncate py-3 pr-4 text-white/70">
+                      {a.display_name}
+                    </td>
+                    <td className="py-3 pr-4">
+                      <StatusPill status={a.status} />
+                    </td>
+                    <td className="py-3 pr-4 text-right tabular-nums">
+                      {a.videos}
+                    </td>
+                    <td className="py-3 text-right font-semibold tabular-nums">
+                      {fmtViews(a.views)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-cf-orange/30">
+                  <td colSpan={3} className="py-3 pr-4 font-bold">
+                    All accounts total
+                  </td>
+                  <td className="py-3 pr-4 text-right font-bold tabular-nums">
+                    {accountSummaries.reduce((s, a) => s + Number(a.videos), 0)}
+                  </td>
+                  <td className="py-3 text-right text-lg font-bold tabular-nums text-cf-orange">
+                    {fmtViews(
+                      accountSummaries.reduce((s, a) => s + Number(a.views), 0),
+                    )}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {/* Top videos */}
+      {topVideos.length > 0 && (
+        <section id="top" className="cf-fade-up cf-delay-3 cf-card scroll-mt-24 p-6">
+          <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
+            🏆 Top videos
+          </h2>
+          <ul className="mt-4 divide-y divide-white/10">
+            {topVideos.map((v, i) => (
+              <li key={v.url} className="flex items-center gap-4 py-3">
+                <span
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black ${
+                    i === 0
+                      ? "bg-cf-orange text-cf-black"
+                      : "bg-white/10 text-white/60"
+                  }`}
+                >
+                  {i + 1}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <a
+                    href={v.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block max-w-[420px] truncate text-sm font-medium text-white hover:text-cf-orange"
+                  >
+                    {v.url.replace("https://www.tiktok.com/", "")}
+                  </a>
+                  <p className="text-xs text-white/50">
+                    @{v.handle} · {v.display_name}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold tabular-nums">{fmtViews(v.views)}</p>
+                  <p className="text-xs text-white/50">{fmtUsd(v.earned_cents)}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* Creator drill-down */}
       <section id="creators" className="cf-fade-up cf-delay-4 cf-card scroll-mt-24 p-6">
         <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
           👥 Creator accounts &amp; videos
         </h2>
         <p className="mt-1 text-sm text-white/60">
-          Click a person to see every account and video under their email,
+          Click a clipper to see every account and video under their email,
           with views per video and their total.
         </p>
         {drillUsers.length === 0 ? (
-          <p className="mt-3 text-sm text-white/40">Nobody signed up yet.</p>
+          <p className="mt-3 text-sm text-white/40">No per-view clippers yet.</p>
         ) : (
           <div className="mt-4 space-y-2">
             {drillUsers.map((u) => {
-              const accounts = drillAccounts.filter(
-                (a) => a.user_id === u.id,
-              );
-              const userVideos = drillVideos.filter(
-                (v) => v.user_id === u.id,
-              );
+              const accounts = drillAccounts.filter((a) => a.user_id === u.id);
+              const userVideos = drillVideos.filter((v) => v.user_id === u.id);
               const totalUserViews = userVideos
                 .filter((v) => v.status === "approved")
                 .reduce((s, v) => s + Number(v.views), 0);
@@ -739,17 +563,8 @@ export default async function AdminPage() {
                         ▸
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate font-semibold">
-                          {u.display_name}
-                          {u.pay_type === "fixed" && (
-                            <span className="ml-2 rounded-full bg-cf-orange/15 px-2 py-0.5 text-xs font-semibold text-cf-orange">
-                              fixed rate
-                            </span>
-                          )}
-                        </p>
-                        <p className="truncate text-xs text-white/50">
-                          {u.email}
-                        </p>
+                        <p className="truncate font-semibold">{u.display_name}</p>
+                        <p className="truncate text-xs text-white/50">{u.email}</p>
                         {accounts.length > 0 && (
                           <p className="mt-1 flex flex-wrap gap-1.5">
                             {accounts.map((acc) => (
@@ -807,16 +622,8 @@ export default async function AdminPage() {
                               >
                                 @{acc.handle}
                               </a>
-                              <span
-                                className={`ml-2 rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${
-                                  acc.status === "approved"
-                                    ? "bg-emerald-500/15 text-emerald-400"
-                                    : acc.status === "rejected"
-                                      ? "bg-red-500/15 text-red-400"
-                                      : "bg-amber-500/15 text-amber-400"
-                                }`}
-                              >
-                                {acc.status}
+                              <span className="ml-2">
+                                <StatusPill status={acc.status} />
                               </span>
                             </p>
                             <p className="text-xs text-white/50">
@@ -837,10 +644,7 @@ export default async function AdminPage() {
                                       rel="noopener noreferrer"
                                       className="block max-w-[320px] truncate text-sm text-white/85 hover:text-cf-orange"
                                     >
-                                      {v.url.replace(
-                                        "https://www.tiktok.com/",
-                                        "",
-                                      )}
+                                      {v.url.replace("https://www.tiktok.com/", "")}
                                     </a>
                                     <p className="text-xs text-white/40 capitalize">
                                       {v.status}
@@ -852,12 +656,11 @@ export default async function AdminPage() {
                                     <p className="text-sm font-bold tabular-nums">
                                       {fmtViews(v.views)}
                                     </p>
-                                    {u.pay_type === "per_view" &&
-                                      Number(v.earned_cents) > 0 && (
-                                        <p className="text-xs text-white/50">
-                                          {fmtUsd(v.earned_cents)}
-                                        </p>
-                                      )}
+                                    {Number(v.earned_cents) > 0 && (
+                                      <p className="text-xs text-white/50">
+                                        {fmtUsd(v.earned_cents)}
+                                      </p>
+                                    )}
                                   </div>
                                 </li>
                               ))}
@@ -874,56 +677,13 @@ export default async function AdminPage() {
         )}
       </section>
 
-
-      {/* Top videos */}
-      {topVideos.length > 0 && (
-        <section id="top" className="cf-fade-up cf-delay-3 cf-card scroll-mt-24 p-6">
-          <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
-            🏆 Top videos
-          </h2>
-          <ul className="mt-4 divide-y divide-white/10">
-            {topVideos.map((v, i) => (
-              <li key={v.url} className="flex items-center gap-4 py-3">
-                <span
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black ${
-                    i === 0
-                      ? "bg-cf-orange text-cf-black"
-                      : "bg-white/10 text-white/60"
-                  }`}
-                >
-                  {i + 1}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <a
-                    href={v.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block max-w-[420px] truncate text-sm font-medium text-white hover:text-cf-orange"
-                  >
-                    {v.url.replace("https://www.tiktok.com/", "")}
-                  </a>
-                  <p className="text-xs text-white/50">
-                    @{v.handle} · {v.display_name}
-                    {v.pay_type === "fixed" && " · fixed rate"}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold tabular-nums">{fmtViews(v.views)}</p>
-                  <p className="text-xs text-white/50">
-                    {v.pay_type === "fixed" ? "views" : fmtUsd(v.earned_cents)}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* Per-view clippers */}
+      {/* Clippers & payouts */}
       <section id="clippers" className="cf-fade-up cf-delay-4 cf-card scroll-mt-24 p-6">
         <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
           ✂️ Clippers &amp; payouts
-          <CountBadge n={clippers.filter((c) => Number(c.earned) > Number(c.paid)).length} />
+          <CountBadge
+            n={clippers.filter((c) => Number(c.earned) > Number(c.paid)).length}
+          />
         </h2>
         <p className="mt-1 text-sm text-white/60">
           Paid per 1K views from the campaign budget. Pay them (PayPal etc.),
@@ -952,9 +712,7 @@ export default async function AdminPage() {
                     <tr key={c.user_id} className="transition hover:bg-white/[0.02]">
                       <td className="max-w-[200px] py-3 pr-4">
                         <p className="truncate font-medium">{c.display_name}</p>
-                        <p className="truncate text-xs text-white/50">
-                          {c.email}
-                        </p>
+                        <p className="truncate text-xs text-white/50">{c.email}</p>
                         {c.payout_method && (
                           <p className="truncate text-xs text-cf-orange/80">
                             {c.payout_method}
@@ -986,105 +744,6 @@ export default async function AdminPage() {
                             userId={c.user_id}
                             current="per_view"
                           />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
-
-      {/* Fixed-rate creators */}
-      <section id="fixed" className="cf-fade-up cf-delay-4 cf-card scroll-mt-24 p-6">
-        <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
-          🤝 Fixed-rate creators
-          <CountBadge n={fixedDueCount} color="red" />
-        </h2>
-        <p className="mt-1 text-sm text-white/60">
-          Flat weekly or monthly deals. Views tracked like everyone else&apos;s
-          — no RPM, no campaign budget. &quot;Next due&quot; = last payment (or
-          deal start) plus the period.
-        </p>
-        {fixedCreators.length === 0 ? (
-          <p className="mt-3 text-sm text-white/40">
-            Nobody on a fixed rate yet — use &quot;Move to fixed rate&quot; on
-            a clipper above.
-          </p>
-        ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead>
-                <tr className="text-xs uppercase tracking-wide text-white/40">
-                  <th className="py-2 pr-4 font-medium">Creator</th>
-                  <th className="py-2 pr-4 font-medium">Deal</th>
-                  <th className="py-2 pr-4 font-medium">Next due</th>
-                  <th className="py-2 pr-4 text-right font-medium">Videos</th>
-                  <th className="py-2 pr-4 text-right font-medium">Views</th>
-                  <th className="py-2 pr-4 text-right font-medium">Paid</th>
-                  <th className="py-2 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/10">
-                {fixedCreators.map((c) => {
-                  const due = nextDue(c);
-                  return (
-                    <tr key={c.user_id} className="transition hover:bg-white/[0.02]">
-                      <td className="max-w-[180px] py-3 pr-4">
-                        <p className="truncate font-medium">{c.display_name}</p>
-                        <p className="truncate text-xs text-white/50">
-                          {c.email}
-                        </p>
-                        {c.payout_method && (
-                          <p className="truncate text-xs text-cf-orange/80">
-                            {c.payout_method}
-                          </p>
-                        )}
-                      </td>
-                      <td className="py-3 pr-4">
-                        <span className="whitespace-nowrap rounded-full bg-cf-orange/15 px-2.5 py-1 text-xs font-semibold text-cf-orange">
-                          {fmtUsd(c.deal_amount_cents)} /{" "}
-                          {c.deal_period === "monthly" ? "month" : "week"}
-                        </span>
-                      </td>
-                      <td className="py-3 pr-4">
-                        {due.overdue ? (
-                          <span className="whitespace-nowrap rounded-full bg-red-500/15 px-2.5 py-1 text-xs font-bold text-red-400">
-                            DUE NOW
-                          </span>
-                        ) : (
-                          <span className="text-white/70">{due.label}</span>
-                        )}
-                      </td>
-                      <td className="py-3 pr-4 text-right tabular-nums">
-                        {c.videos}
-                      </td>
-                      <td className="py-3 pr-4 text-right font-semibold tabular-nums">
-                        {fmtViews(c.views)}
-                      </td>
-                      <td className="py-3 pr-4 text-right tabular-nums">
-                        {fmtUsd(c.paid)}
-                      </td>
-                      <td className="py-3">
-                        <div className="space-y-2">
-                          <PaymentForm action={recordPayment} userId={c.user_id} />
-                          <div className="flex flex-wrap gap-2">
-                            <PayTypeForm
-                              action={setPayType}
-                              userId={c.user_id}
-                              current="per_view"
-                              dealAmount={Number(c.deal_amount_cents) / 100}
-                              dealPeriod={c.deal_period}
-                              label="Update deal"
-                            />
-                            <PayTypeForm
-                              action={setPayType}
-                              userId={c.user_id}
-                              current="fixed"
-                            />
-                          </div>
                         </div>
                       </td>
                     </tr>

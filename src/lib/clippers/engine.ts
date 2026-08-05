@@ -1,6 +1,6 @@
 import "server-only";
 import { ensureSchema, sql, type SettingsRow } from "./db";
-import { fetchViewCounts } from "./tiktok";
+import { fetchProfilePosts, fetchViewCounts } from "./tiktok";
 
 // How earnings work:
 // - Each refresh pulls fresh view counts for every APPROVED video.
@@ -18,6 +18,7 @@ export type RefreshResult = {
   checked: number;
   updated: number;
   missing: number;
+  autoScanned: number;
   earnedCentsAdded: number;
   budgetExhausted: boolean;
   errors: string[];
@@ -29,12 +30,45 @@ export async function refreshViews(): Promise<RefreshResult> {
     checked: 0,
     updated: 0,
     missing: 0,
+    autoScanned: 0,
     earnedCentsAdded: 0,
     budgetExhausted: false,
     errors: [],
   };
 
-  const videos = await sql<
+  // ---- Fixed-rate creators: scan their whole accounts automatically ----
+  // They don't submit links — every post on an approved account is found,
+  // imported (auto-approved) and view-updated here. No earnings, no budget.
+  const scannedIds = new Set<string>();
+  const fixedAccounts = await sql<
+    { id: number; user_id: number; handle: string }[]
+  >`SELECT a.id, a.user_id, LOWER(a.handle) AS handle
+    FROM cf_accounts a JOIN cf_users u ON u.id = a.user_id
+    WHERE a.status = 'approved' AND u.pay_type = 'fixed'`;
+  if (fixedAccounts.length > 0) {
+    const byHandle = new Map(fixedAccounts.map((a) => [a.handle, a]));
+    try {
+      const posts = await fetchProfilePosts([...byHandle.keys()]);
+      for (const post of posts) {
+        const acc = byHandle.get(post.handle);
+        if (!acc) continue;
+        // Update views only when the row belongs to this account's owner, so
+        // a per-view clipper's delta-based earnings can never be skipped.
+        await sql`
+          INSERT INTO cf_videos (user_id, account_id, url, tiktok_id, status, views, last_checked)
+          VALUES (${acc.user_id}, ${acc.id}, ${post.cleanUrl}, ${post.tiktokId}, 'approved', ${post.views}, now())
+          ON CONFLICT (tiktok_id) DO UPDATE
+          SET views = EXCLUDED.views, last_checked = now(), track_error = ''
+          WHERE cf_videos.user_id = EXCLUDED.user_id`;
+        scannedIds.add(post.tiktokId);
+        result.autoScanned++;
+      }
+    } catch (err) {
+      result.errors.push(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  const allVideos = await sql<
     {
       id: number;
       url: string;
@@ -45,8 +79,9 @@ export async function refreshViews(): Promise<RefreshResult> {
   >`SELECT v.id, v.url, v.tiktok_id, v.views, u.pay_type
     FROM cf_videos v JOIN cf_users u ON u.id = v.user_id
     WHERE v.status = 'approved' ORDER BY v.id`;
-  result.checked = videos.length;
-  if (videos.length === 0) return result;
+  // Skip anything the profile scan just updated.
+  const videos = allVideos.filter((v) => !scannedIds.has(v.tiktok_id));
+  result.checked = allVideos.length;
 
   for (let i = 0; i < videos.length; i += BATCH_SIZE) {
     const batch = videos.slice(i, i + BATCH_SIZE);
@@ -119,10 +154,14 @@ export async function refreshViews(): Promise<RefreshResult> {
   result.budgetExhausted =
     Number(s.total_earned_cents) >= Number(s.budget_cents);
 
-  // Record a history point so the admin analytics graph can show growth.
+  // Record a history point so the admin analytics graphs can show growth.
   await sql`
-    INSERT INTO cf_snapshots (total_views)
-    SELECT COALESCE(SUM(views), 0) FROM cf_videos WHERE status = 'approved'`;
+    INSERT INTO cf_snapshots (total_views, fixed_views, rpm_views)
+    SELECT COALESCE(SUM(v.views), 0),
+           COALESCE(SUM(v.views) FILTER (WHERE u.pay_type = 'fixed'), 0),
+           COALESCE(SUM(v.views) FILTER (WHERE u.pay_type = 'per_view'), 0)
+    FROM cf_videos v JOIN cf_users u ON u.id = v.user_id
+    WHERE v.status = 'approved'`;
 
   return result;
 }

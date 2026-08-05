@@ -108,6 +108,8 @@ async function migrate() {
       captured_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       total_views BIGINT NOT NULL DEFAULT 0
     )`;
+  await sql`ALTER TABLE cf_snapshots ADD COLUMN IF NOT EXISTS fixed_views BIGINT NOT NULL DEFAULT 0`;
+  await sql`ALTER TABLE cf_snapshots ADD COLUMN IF NOT EXISTS rpm_views BIGINT NOT NULL DEFAULT 0`;
   // Structured fixed-rate deal: amount + cadence + when the deal started.
   await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS deal_amount_cents BIGINT NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS deal_period TEXT NOT NULL DEFAULT 'weekly'`;
