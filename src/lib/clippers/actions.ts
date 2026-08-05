@@ -242,22 +242,36 @@ export async function setPayType(
   await requireAdmin();
   const userId = Number(formData.get("user_id"));
   const payType = String(formData.get("pay_type"));
-  const note = String(formData.get("deal_note") ?? "").trim().slice(0, 200);
   if (!Number.isInteger(userId) || !["per_view", "fixed"].includes(payType))
     return { error: "Bad request." };
 
   await ensureSchema();
-  await sql`
-    UPDATE cf_users
-    SET pay_type = ${payType},
-        deal_note = ${payType === "fixed" ? note : ""}
-    WHERE id = ${userId} AND role = 'clipper'`;
+  if (payType === "fixed") {
+    const amount = Number(formData.get("deal_amount"));
+    const period = String(formData.get("deal_period"));
+    if (!Number.isFinite(amount) || amount <= 0)
+      return { error: "Enter the deal amount in dollars (e.g. 50)." };
+    if (!["weekly", "monthly"].includes(period))
+      return { error: "Pick weekly or monthly." };
+    await sql`
+      UPDATE cf_users
+      SET pay_type = 'fixed',
+          deal_amount_cents = ${Math.round(amount * 100)},
+          deal_period = ${period},
+          deal_started_at = COALESCE(deal_started_at, now())
+      WHERE id = ${userId} AND role = 'clipper'`;
+  } else {
+    await sql`
+      UPDATE cf_users
+      SET pay_type = 'per_view', deal_started_at = NULL
+      WHERE id = ${userId} AND role = 'clipper'`;
+  }
   revalidatePath("/clippers/admin");
   revalidatePath("/clippers/dashboard");
   return {
     ok:
       payType === "fixed"
-        ? "Moved to fixed rate — their videos are tracked but no longer earn from the campaign budget."
+        ? "Moved to fixed rate — views tracked, paid on schedule, no campaign budget used."
         : "Moved to per-view — their videos now earn at the campaign RPM.",
   };
 }

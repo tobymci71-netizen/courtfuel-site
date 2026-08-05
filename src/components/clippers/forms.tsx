@@ -187,12 +187,16 @@ export function PayTypeForm({
   action,
   userId,
   current,
-  dealNote,
+  dealAmount,
+  dealPeriod,
+  label,
 }: {
   action: Action;
   userId: number;
   current: "per_view" | "fixed";
-  dealNote: string;
+  dealAmount?: number;
+  dealPeriod?: string;
+  label?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const toFixed = current === "per_view";
@@ -201,18 +205,32 @@ export function PayTypeForm({
       <input type="hidden" name="user_id" value={userId} />
       <input type="hidden" name="pay_type" value={toFixed ? "fixed" : "per_view"} />
       {toFixed && (
-        <input
-          name="deal_note"
-          placeholder={'deal, e.g. "$50/week"'}
-          defaultValue={dealNote}
-          className="w-36 rounded-lg border border-white/15 bg-white/[0.06] px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:border-cf-orange"
-        />
+        <>
+          <input
+            name="deal_amount"
+            type="number"
+            step="0.01"
+            min="0.01"
+            placeholder="$"
+            defaultValue={dealAmount || undefined}
+            required
+            className="w-20 rounded-lg border border-white/15 bg-white/[0.06] px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:border-cf-orange"
+          />
+          <select
+            name="deal_period"
+            defaultValue={dealPeriod || "weekly"}
+            className="rounded-lg border border-white/15 bg-cf-black px-2 py-2 text-sm text-white outline-none focus:border-cf-orange"
+          >
+            <option value="weekly">/ week</option>
+            <option value="monthly">/ month</option>
+          </select>
+        </>
       )}
       <button
         disabled={pending}
         className="rounded-full border border-cf-orange/40 bg-cf-orange/10 px-4 py-2 text-sm font-semibold text-cf-orange transition hover:bg-cf-orange hover:text-cf-black disabled:opacity-50"
       >
-        {pending ? "…" : toFixed ? "Move to fixed rate" : "Move to per-view"}
+        {pending ? "…" : (label ?? (toFixed ? "Move to fixed rate" : "Move to per-view"))}
       </button>
       <Feedback state={state} />
     </form>

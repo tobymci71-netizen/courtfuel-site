@@ -73,9 +73,10 @@ export default async function Dashboard() {
         {isFixed ? (
           <p className="mt-1 text-sm text-white/60">
             You&apos;re on a fixed-rate deal
-            {user.deal_note && (
+            {Number(user.deal_amount_cents) > 0 && (
               <span className="ml-2 rounded-full bg-cf-orange/15 px-2.5 py-0.5 text-xs font-semibold text-cf-orange">
-                {user.deal_note}
+                {fmtUsd(user.deal_amount_cents)} /{" "}
+                {user.deal_period === "monthly" ? "month" : "week"}
               </span>
             )}
           </p>

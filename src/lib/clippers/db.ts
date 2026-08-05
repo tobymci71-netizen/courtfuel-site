@@ -101,6 +101,10 @@ async function migrate() {
   // deal agreed off-platform — views tracked, no RPM accrual).
   await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS pay_type TEXT NOT NULL DEFAULT 'per_view'`;
   await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS deal_note TEXT NOT NULL DEFAULT ''`;
+  // Structured fixed-rate deal: amount + cadence + when the deal started.
+  await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS deal_amount_cents BIGINT NOT NULL DEFAULT 0`;
+  await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS deal_period TEXT NOT NULL DEFAULT 'weekly'`;
+  await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS deal_started_at TIMESTAMPTZ`;
 }
 
 export function ensureSchema(): Promise<void> {
@@ -123,6 +127,9 @@ export type UserRow = {
   payout_method: string;
   pay_type: "per_view" | "fixed";
   deal_note: string;
+  deal_amount_cents: number;
+  deal_period: "weekly" | "monthly";
+  deal_started_at: string | null;
 };
 
 export type AccountRow = {
