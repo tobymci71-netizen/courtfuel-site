@@ -8,6 +8,7 @@ import {
   savePayoutMethod,
 } from "@/lib/clippers/actions";
 import { SingleFieldForm } from "@/components/clippers/forms";
+import { ViewsChart } from "@/components/clippers/admin-ui";
 
 const statusBadge: Record<string, string> = {
   pending: "bg-amber-500/15 text-amber-400",
@@ -30,14 +31,17 @@ export default async function Dashboard() {
   if (!user) redirect("/clippers/login");
 
   await ensureSchema();
-  const [accounts, videos, paidRows, settings] = await Promise.all([
+  const [accounts, videos, paidRows, settings, mySnapshots] = await Promise.all([
     sql<AccountRow[]>`
       SELECT * FROM cf_accounts WHERE user_id = ${user.id} ORDER BY created_at DESC`,
     sql<VideoRow[]>`
-      SELECT * FROM cf_videos WHERE user_id = ${user.id} ORDER BY created_at DESC`,
+      SELECT * FROM cf_videos WHERE user_id = ${user.id} ORDER BY views DESC, created_at DESC`,
     sql<{ paid: string }[]>`
       SELECT COALESCE(SUM(amount_cents), 0) AS paid FROM cf_payments WHERE user_id = ${user.id}`,
     getSettings(),
+    sql<{ captured_at: string; value: string }[]>`
+      SELECT captured_at, views AS value FROM cf_user_snapshots
+      WHERE user_id = ${user.id} ORDER BY captured_at ASC LIMIT 500`,
   ]);
 
   const earned = videos.reduce((sum, v) => sum + Number(v.earned_cents), 0);
@@ -107,6 +111,23 @@ export default async function Dashboard() {
           </div>
         ))}
       </div>
+
+      {/* Personal views graph */}
+      <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">Your views over time</h2>
+            <p className="mt-1 text-sm text-white/60">
+              Total views across your approved videos, recorded at each
+              refresh.
+            </p>
+          </div>
+          <p className="text-2xl font-bold tabular-nums text-cf-orange">
+            {fmtViews(totalViews)}
+          </p>
+        </div>
+        <ViewsChart points={mySnapshots} />
+      </section>
 
       {/* Accounts */}
       <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">

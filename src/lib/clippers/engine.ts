@@ -154,7 +154,8 @@ export async function refreshViews(): Promise<RefreshResult> {
   result.budgetExhausted =
     Number(s.total_earned_cents) >= Number(s.budget_cents);
 
-  // Record a history point so the admin analytics graphs can show growth.
+  // Record history points so the analytics graphs can show growth —
+  // one global row, plus one row per creator for their personal graph.
   await sql`
     INSERT INTO cf_snapshots (total_views, fixed_views, rpm_views)
     SELECT COALESCE(SUM(v.views), 0),
@@ -162,6 +163,11 @@ export async function refreshViews(): Promise<RefreshResult> {
            COALESCE(SUM(v.views) FILTER (WHERE u.pay_type = 'per_view'), 0)
     FROM cf_videos v JOIN cf_users u ON u.id = v.user_id
     WHERE v.status = 'approved'`;
+  await sql`
+    INSERT INTO cf_user_snapshots (user_id, views)
+    SELECT user_id, COALESCE(SUM(views), 0)
+    FROM cf_videos WHERE status = 'approved'
+    GROUP BY user_id`;
 
   return result;
 }

@@ -110,6 +110,14 @@ async function migrate() {
     )`;
   await sql`ALTER TABLE cf_snapshots ADD COLUMN IF NOT EXISTS fixed_views BIGINT NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE cf_snapshots ADD COLUMN IF NOT EXISTS rpm_views BIGINT NOT NULL DEFAULT 0`;
+  // Per-creator view history so each clipper gets their own growth graph.
+  await sql`
+    CREATE TABLE IF NOT EXISTS cf_user_snapshots (
+      id          SERIAL PRIMARY KEY,
+      user_id     INT NOT NULL REFERENCES cf_users(id) ON DELETE CASCADE,
+      captured_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+      views       BIGINT NOT NULL DEFAULT 0
+    )`;
   // Structured fixed-rate deal: amount + cadence + when the deal started.
   await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS deal_amount_cents BIGINT NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS deal_period TEXT NOT NULL DEFAULT 'weekly'`;
