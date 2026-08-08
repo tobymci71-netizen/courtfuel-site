@@ -238,15 +238,25 @@ export async function recordPayment(
 // Stops a dead/unreadable video being re-checked every refresh (each check
 // costs money). Keeps the row and its earnings history intact — only
 // 'approved' videos are refreshed, so this simply retires it.
+// Toggle re-checking for a post. Retired posts keep their views and their
+// earnings — this only controls whether we keep asking TikTok about them.
 export async function stopTracking(formData: FormData) {
   await requireAdmin();
   const id = Number(formData.get("id"));
+  const resume = String(formData.get("resume") ?? "") === "1";
   if (!Number.isInteger(id)) return;
-  await sql`
-    UPDATE cf_videos
-    SET status = 'rejected',
-        track_error = 'Stopped tracking — could not be read'
-    WHERE id = ${id}`;
+  if (resume) {
+    await sql`
+      UPDATE cf_videos
+      SET tracking = true, missed_count = 0, track_error = ''
+      WHERE id = ${id}`;
+  } else {
+    await sql`
+      UPDATE cf_videos
+      SET tracking = false,
+          track_error = 'Not tracked — you stopped re-checking this post.'
+      WHERE id = ${id}`;
+  }
   revalidatePath("/clippers/admin");
   revalidatePath("/clippers/admin/fixed");
 }
@@ -301,14 +311,14 @@ export async function adminRefreshViews(
     revalidatePath("/clippers/admin");
     revalidatePath("/clippers/dashboard");
     const bits = [
-      `Checked ${r.checked} videos`,
-      `updated ${r.updated}`,
-      `auto-scanned ${r.autoScanned} posts from fixed accounts`,
+      `Scanned ${r.autoScanned} public posts across the approved accounts`,
+      `updated ${r.updated} videos`,
       `added $${(r.earnedCentsAdded / 100).toFixed(2)} in earnings`,
     ];
-    if (r.missing)
+    if (r.discovered) bits.push(`found ${r.discovered} new posts`);
+    if (r.retired)
       bits.push(
-        `${r.missing} couldn't be read (see "Needs attention" below)`,
+        `retired ${r.retired} that are no longer public (views kept)`,
       );
     if (r.budgetExhausted) bits.push("budget is fully used");
     if (r.errors.length) bits.push(`errors: ${r.errors[0]}`);

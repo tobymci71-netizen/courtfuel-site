@@ -46,7 +46,7 @@ export function parseProfileUrl(
 
 const APIFY_ACTOR = "clockworks~tiktok-video-scraper";
 const APIFY_PROFILE_ACTOR = "clockworks~tiktok-profile-scraper";
-const POSTS_PER_PROFILE = 20;
+const POSTS_PER_PROFILE = 30;
 
 type ApifyItem = {
   id?: string;

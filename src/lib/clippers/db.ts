@@ -110,6 +110,11 @@ async function migrate() {
     )`;
   await sql`ALTER TABLE cf_snapshots ADD COLUMN IF NOT EXISTS fixed_views BIGINT NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE cf_snapshots ADD COLUMN IF NOT EXISTS rpm_views BIGINT NOT NULL DEFAULT 0`;
+  // Tracking state: a post that stops being publicly readable (deleted or
+  // set to private, e.g. on a reupload) retires itself after a couple of
+  // misses instead of erroring forever. Views stay frozen at the last read.
+  await sql`ALTER TABLE cf_videos ADD COLUMN IF NOT EXISTS tracking BOOLEAN NOT NULL DEFAULT true`;
+  await sql`ALTER TABLE cf_videos ADD COLUMN IF NOT EXISTS missed_count INT NOT NULL DEFAULT 0`;
   // Per-creator view history so each clipper gets their own growth graph.
   await sql`
     CREATE TABLE IF NOT EXISTS cf_user_snapshots (

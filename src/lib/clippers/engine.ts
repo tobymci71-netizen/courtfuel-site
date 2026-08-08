@@ -2,23 +2,33 @@ import "server-only";
 import { ensureSchema, sql, type SettingsRow } from "./db";
 import { fetchProfilePosts, fetchViewCounts } from "./tiktok";
 
-// How earnings work:
-// - Each refresh pulls fresh view counts for every APPROVED video.
-// - A video only earns on NEW views since the last refresh (the delta).
-// - delta earnings = deltaViews / 1000 * RPM.
-// - Earnings only accrue while the campaign is active AND budget remains.
-//   The final accrual is clamped to exactly exhaust the budget, so total
-//   payouts can never exceed the budget you set. Raising the budget later
-//   resumes accrual from the current view counts (views seen while the
-//   budget was exhausted don't retroactively earn).
+// How a refresh works:
+//
+// 1. Every APPROVED account is scanned for the posts currently public on the
+//    channel. That scan is the source of truth — it survives reuploads,
+//    covers slideshows, and needs nobody to paste links.
+//      · fixed-rate creators: anything public is tracked automatically.
+//      · per-view clippers: newly discovered posts land as PENDING, so you
+//        still approve before a single view can earn.
+// 2. Anything already approved but not covered by the scan (older than the
+//    scan window) is checked individually by URL.
+// 3. Per-view videos earn on NEW views only: delta / 1000 * RPM, clamped so
+//    total earnings can never exceed the campaign budget. Fixed-rate videos
+//    are view-tracked but never earn and never touch the budget.
+// 4. A post that can't be read twice in a row (deleted, or set to private on
+//    a reupload) retires itself: views freeze at the last good reading and
+//    it stops being re-checked, instead of erroring every day.
 
 const BATCH_SIZE = 25;
+const MISS_LIMIT = 2;
 
 export type RefreshResult = {
   checked: number;
   updated: number;
   missing: number;
   autoScanned: number;
+  discovered: number;
+  retired: number;
   earnedCentsAdded: number;
   budgetExhausted: boolean;
   errors: string[];
@@ -31,131 +41,157 @@ export async function refreshViews(): Promise<RefreshResult> {
     updated: 0,
     missing: 0,
     autoScanned: 0,
+    discovered: 0,
+    retired: 0,
     earnedCentsAdded: 0,
     budgetExhausted: false,
     errors: [],
   };
 
-  // ---- Fixed-rate creators: scan their whole accounts automatically ----
-  // They don't submit links — every post on an approved account is found,
-  // imported (auto-approved) and view-updated here. No earnings, no budget.
-  const scannedIds = new Set<string>();
-  const fixedAccounts = await sql<
-    { id: number; user_id: number; handle: string }[]
-  >`SELECT a.id, a.user_id, LOWER(a.handle) AS handle
+  // ---- 1. Read what is publicly live on every approved account ----
+  const fresh = new Map<string, number>();
+  const accounts = await sql<
+    { id: number; user_id: number; handle: string; pay_type: string }[]
+  >`SELECT a.id, a.user_id, LOWER(a.handle) AS handle, u.pay_type
     FROM cf_accounts a JOIN cf_users u ON u.id = a.user_id
-    WHERE a.status = 'approved' AND u.pay_type = 'fixed'`;
-  if (fixedAccounts.length > 0) {
-    const byHandle = new Map(fixedAccounts.map((a) => [a.handle, a]));
+    WHERE a.status = 'approved'`;
+
+  if (accounts.length > 0) {
+    const byHandle = new Map(accounts.map((a) => [a.handle, a]));
     try {
       const posts = await fetchProfilePosts([...byHandle.keys()]);
       for (const post of posts) {
         const acc = byHandle.get(post.handle);
         if (!acc) continue;
-        // Update views only when the row belongs to this account's owner, so
-        // a per-view clipper's delta-based earnings can never be skipped.
-        await sql`
-          INSERT INTO cf_videos (user_id, account_id, url, tiktok_id, status, views, last_checked)
-          VALUES (${acc.user_id}, ${acc.id}, ${post.cleanUrl}, ${post.tiktokId}, 'approved', ${post.views}, now())
-          ON CONFLICT (tiktok_id) DO UPDATE
-          SET views = EXCLUDED.views, last_checked = now(), track_error = ''
-          WHERE cf_videos.user_id = EXCLUDED.user_id`;
-        scannedIds.add(post.tiktokId);
+        fresh.set(post.tiktokId, post.views);
         result.autoScanned++;
+
+        // New posts are inserted with views 0 so that, for per-view clippers,
+        // approving a video still counts the views it already had.
+        const status = acc.pay_type === "fixed" ? "approved" : "pending";
+        const inserted = await sql<{ id: number }[]>`
+          INSERT INTO cf_videos (user_id, account_id, url, tiktok_id, status)
+          VALUES (${acc.user_id}, ${acc.id}, ${post.cleanUrl}, ${post.tiktokId}, ${status})
+          ON CONFLICT (tiktok_id) DO NOTHING
+          RETURNING id`;
+        if (inserted.length > 0) result.discovered++;
       }
     } catch (err) {
       result.errors.push(err instanceof Error ? err.message : String(err));
     }
   }
 
-  const allVideos = await sql<
+  // ---- 2. Collect every video we're still tracking ----
+  const videos = await sql<
     {
       id: number;
       url: string;
       tiktok_id: string;
       views: number;
+      missed_count: number;
       pay_type: string;
     }[]
-  >`SELECT v.id, v.url, v.tiktok_id, v.views, u.pay_type
+  >`SELECT v.id, v.url, v.tiktok_id, v.views, v.missed_count, u.pay_type
     FROM cf_videos v JOIN cf_users u ON u.id = v.user_id
-    WHERE v.status = 'approved' ORDER BY v.id`;
-  // Skip anything the profile scan just updated.
-  const videos = allVideos.filter((v) => !scannedIds.has(v.tiktok_id));
-  result.checked = allVideos.length;
+    WHERE v.status = 'approved' AND v.tracking = true
+    ORDER BY v.id`;
+  result.checked = videos.length;
+  if (videos.length === 0) {
+    await recordSnapshots();
+    return finish(result);
+  }
 
-  for (let i = 0; i < videos.length; i += BATCH_SIZE) {
-    const batch = videos.slice(i, i + BATCH_SIZE);
-    let counts: Map<string, number>;
+  // ---- 3. Anything the channel scan didn't cover, check by URL ----
+  const uncovered = videos.filter((v) => !fresh.has(v.tiktok_id));
+  for (let i = 0; i < uncovered.length; i += BATCH_SIZE) {
+    const batch = uncovered.slice(i, i + BATCH_SIZE);
     try {
-      counts = await fetchViewCounts(batch.map((v) => v.url));
+      const counts = await fetchViewCounts(batch.map((v) => v.url));
+      for (const [id, views] of counts) fresh.set(id, views);
     } catch (err) {
       result.errors.push(err instanceof Error ? err.message : String(err));
-      continue;
-    }
-
-    for (const video of batch) {
-      const fresh = counts.get(video.tiktok_id);
-      if (fresh === undefined) {
-        result.missing++;
-        await sql`
-          UPDATE cf_videos
-          SET last_checked = now(),
-              track_error = 'Could not read this post (deleted, private, or scraper miss)'
-          WHERE id = ${video.id}`;
-        continue;
-      }
-
-      // Serializable accrual: lock settings, compute clamp, apply.
-      const added = await sql.begin(async (tx) => {
-        const [s] = await tx<
-          SettingsRow[]
-        >`SELECT rpm_cents, budget_cents, total_earned_cents, campaign_active
-          FROM cf_settings WHERE id = 1 FOR UPDATE`;
-        const [row] = await tx<
-          { views: number }[]
-        >`SELECT views FROM cf_videos WHERE id = ${video.id} FOR UPDATE`;
-
-        const deltaViews = Math.max(0, fresh - Number(row.views));
-        let earn = 0;
-        if (deltaViews > 0 && s.campaign_active && video.pay_type === "per_view") {
-          const raw = Math.floor((deltaViews * s.rpm_cents) / 1000);
-          const remaining = Math.max(
-            0,
-            Number(s.budget_cents) - Number(s.total_earned_cents),
-          );
-          earn = Math.min(raw, remaining);
-        }
-
-        await tx`
-          UPDATE cf_videos
-          SET views = ${fresh},
-              earned_cents = earned_cents + ${earn},
-              last_checked = now(),
-              track_error = ''
-          WHERE id = ${video.id}`;
-        if (earn > 0) {
-          await tx`
-            UPDATE cf_settings
-            SET total_earned_cents = total_earned_cents + ${earn},
-                updated_at = now()
-            WHERE id = 1`;
-        }
-        return earn;
-      });
-
-      result.updated++;
-      result.earnedCentsAdded += added;
     }
   }
 
-  const [s] = await sql<SettingsRow[]>`
-    SELECT rpm_cents, budget_cents, total_earned_cents, campaign_active
-    FROM cf_settings WHERE id = 1`;
-  result.budgetExhausted =
-    Number(s.total_earned_cents) >= Number(s.budget_cents);
+  // ---- 4. Apply fresh counts, accrue earnings, retire dead posts ----
+  for (const video of videos) {
+    const freshViews = fresh.get(video.tiktok_id);
 
-  // Record history points so the analytics graphs can show growth —
-  // one global row, plus one row per creator for their personal graph.
+    if (freshViews === undefined) {
+      const missed = Number(video.missed_count) + 1;
+      result.missing++;
+      if (missed >= MISS_LIMIT) {
+        result.retired++;
+        await sql`
+          UPDATE cf_videos
+          SET missed_count = ${missed},
+              tracking = false,
+              last_checked = now(),
+              track_error = 'No longer public — deleted or set to private. Views frozen at the last reading.'
+          WHERE id = ${video.id}`;
+      } else {
+        await sql`
+          UPDATE cf_videos
+          SET missed_count = ${missed},
+              last_checked = now(),
+              track_error = 'Could not be read this time — will retry on the next refresh.'
+          WHERE id = ${video.id}`;
+      }
+      continue;
+    }
+
+    // Serializable accrual: lock settings, compute clamp, apply.
+    const added = await sql.begin(async (tx) => {
+      const [s] = await tx<SettingsRow[]>`
+        SELECT rpm_cents, budget_cents, total_earned_cents, campaign_active
+        FROM cf_settings WHERE id = 1 FOR UPDATE`;
+      const [row] = await tx<{ views: number }[]>`
+        SELECT views FROM cf_videos WHERE id = ${video.id} FOR UPDATE`;
+
+      const deltaViews = Math.max(0, freshViews - Number(row.views));
+      let earn = 0;
+      if (
+        deltaViews > 0 &&
+        s.campaign_active &&
+        video.pay_type === "per_view"
+      ) {
+        const raw = Math.floor((deltaViews * s.rpm_cents) / 1000);
+        const remaining = Math.max(
+          0,
+          Number(s.budget_cents) - Number(s.total_earned_cents),
+        );
+        earn = Math.min(raw, remaining);
+      }
+
+      await tx`
+        UPDATE cf_videos
+        SET views = ${freshViews},
+            earned_cents = earned_cents + ${earn},
+            last_checked = now(),
+            missed_count = 0,
+            track_error = ''
+        WHERE id = ${video.id}`;
+      if (earn > 0) {
+        await tx`
+          UPDATE cf_settings
+          SET total_earned_cents = total_earned_cents + ${earn},
+              updated_at = now()
+          WHERE id = 1`;
+      }
+      return earn;
+    });
+
+    result.updated++;
+    result.earnedCentsAdded += added;
+  }
+
+  await recordSnapshots();
+  return finish(result);
+}
+
+// History points for the analytics graphs: one global row (split by deal
+// type) plus one row per creator for their personal graph.
+async function recordSnapshots() {
   await sql`
     INSERT INTO cf_snapshots (total_views, fixed_views, rpm_views)
     SELECT COALESCE(SUM(v.views), 0),
@@ -168,7 +204,14 @@ export async function refreshViews(): Promise<RefreshResult> {
     SELECT user_id, COALESCE(SUM(views), 0)
     FROM cf_videos WHERE status = 'approved'
     GROUP BY user_id`;
+}
 
+async function finish(result: RefreshResult): Promise<RefreshResult> {
+  const [s] = await sql<SettingsRow[]>`
+    SELECT rpm_cents, budget_cents, total_earned_cents, campaign_active
+    FROM cf_settings WHERE id = 1`;
+  result.budgetExhausted =
+    Number(s.total_earned_cents) >= Number(s.budget_cents);
   return result;
 }
 

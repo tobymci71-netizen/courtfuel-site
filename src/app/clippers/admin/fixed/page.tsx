@@ -126,12 +126,13 @@ export default async function AdminFixedPage() {
     sql<{ t: string | null }[]>`
       SELECT MAX(last_checked) AS t FROM cf_videos WHERE status = 'approved'`,
     sql<UnreadableVideo[]>`
-      SELECT v.id, v.url, v.track_error, v.last_checked, a.handle, u.display_name
+      SELECT v.id, v.url, v.track_error, v.last_checked, v.views, v.tracking,
+             a.handle, u.display_name
       FROM cf_videos v
       JOIN cf_accounts a ON a.id = v.account_id
       JOIN cf_users u ON u.id = v.user_id
       WHERE v.status = 'approved' AND v.track_error <> '' AND u.pay_type = 'fixed'
-      ORDER BY v.last_checked DESC NULLS LAST`,
+      ORDER BY v.tracking, v.last_checked DESC NULLS LAST`,
   ]);
 
   const totalViews = Number(totals[0]?.views ?? 0);

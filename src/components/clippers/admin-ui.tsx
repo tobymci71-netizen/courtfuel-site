@@ -34,6 +34,8 @@ export type UnreadableVideo = {
   display_name: string;
   track_error: string;
   last_checked: string | null;
+  views: number;
+  tracking: boolean;
 };
 
 export function NeedsAttention({
@@ -49,22 +51,22 @@ export function NeedsAttention({
       className={`cf-card scroll-mt-24 p-6 ${videos.length > 0 ? "border-amber-400/40 bg-amber-400/5" : ""}`}
     >
       <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
-        ⚠️ Needs attention
+        📦 No longer public
         <CountBadge n={videos.length} />
       </h2>
       {videos.length === 0 ? (
         <p className="mt-3 text-sm text-white/40">
-          Everything is reading fine ✓
+          Every post is reading fine ✓
         </p>
       ) : (
         <>
           <p className="mt-1 text-sm text-white/70">
-            These posts came back empty on the last refresh — almost always
-            because the post was <strong>deleted</strong>, set to{" "}
-            <strong>private</strong>, or the link was wrong. Their view counts
-            are frozen at whatever was last read. Open one to check; if
-            it&apos;s really gone, stop tracking it so it isn&apos;t re-checked
-            (and re-charged) every day.
+            These posts stopped being readable — usually deleted, or set to
+            private when they were reuploaded. Nothing is lost:{" "}
+            <strong>their views still count</strong>, frozen at the last good
+            reading, and a reupload gets picked up as a new post
+            automatically. They&apos;re no longer re-checked, so they cost
+            nothing. If one is public again, hit Re-check.
           </p>
           <ul className="mt-4 divide-y divide-white/10">
             {videos.map((v) => (
@@ -77,20 +79,26 @@ export function NeedsAttention({
                     href={v.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block max-w-[360px] truncate font-medium text-cf-orange hover:underline"
+                    className="block max-w-[340px] truncate font-medium text-cf-orange hover:underline"
                   >
                     {v.url.replace("https://www.tiktok.com/", "")}
                   </a>
                   <p className="truncate text-xs text-white/50">
-                    @{v.handle} · {v.display_name}
+                    @{v.handle} · {v.display_name} ·{" "}
+                    {Number(v.views).toLocaleString("en-US")} views kept
                     {v.last_checked &&
                       ` · last read ${new Date(v.last_checked).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
                   </p>
                 </div>
                 <form action={action}>
                   <input type="hidden" name="id" value={v.id} />
-                  <button className="rounded-full bg-white/10 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-red-500/25 hover:text-red-400">
-                    Stop tracking
+                  <input
+                    type="hidden"
+                    name="resume"
+                    value={v.tracking ? "0" : "1"}
+                  />
+                  <button className="rounded-full bg-white/10 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-cf-orange hover:text-cf-black">
+                    {v.tracking ? "Stop re-checking" : "Re-check"}
                   </button>
                 </form>
               </li>
