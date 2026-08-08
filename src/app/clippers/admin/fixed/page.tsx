@@ -7,6 +7,7 @@ import {
   recordPayment,
   reviewAccount,
   setPayType,
+  stopTracking,
 } from "@/lib/clippers/actions";
 import {
   PaymentForm,
@@ -17,9 +18,11 @@ import {
   AdminTabs,
   ApproveButtons,
   CountBadge,
+  NeedsAttention,
   StatusPill,
   ViewsChart,
   nextDue,
+  type UnreadableVideo,
 } from "@/components/clippers/admin-ui";
 
 export const maxDuration = 300;
@@ -80,6 +83,7 @@ export default async function AdminFixedPage() {
     totals,
     snapshots,
     lastRefresh,
+    unreadable,
   ] = await Promise.all([
     sql<PendingAccount[]>`
       SELECT a.id, a.url, a.handle, u.email, u.display_name
@@ -121,6 +125,13 @@ export default async function AdminFixedPage() {
       ORDER BY captured_at ASC LIMIT 500`,
     sql<{ t: string | null }[]>`
       SELECT MAX(last_checked) AS t FROM cf_videos WHERE status = 'approved'`,
+    sql<UnreadableVideo[]>`
+      SELECT v.id, v.url, v.track_error, v.last_checked, a.handle, u.display_name
+      FROM cf_videos v
+      JOIN cf_accounts a ON a.id = v.account_id
+      JOIN cf_users u ON u.id = v.user_id
+      WHERE v.status = 'approved' AND v.track_error <> '' AND u.pay_type = 'fixed'
+      ORDER BY v.last_checked DESC NULLS LAST`,
   ]);
 
   const totalViews = Number(totals[0]?.views ?? 0);
@@ -340,6 +351,10 @@ export default async function AdminFixedPage() {
           </div>
         )}
       </section>
+
+      <div className="cf-fade-up cf-delay-3">
+        <NeedsAttention videos={unreadable} action={stopTracking} />
+      </div>
 
       {/* Account approvals */}
       <section id="approvals" className="cf-fade-up cf-delay-3 cf-card scroll-mt-24 p-6">

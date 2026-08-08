@@ -8,6 +8,7 @@ import {
   reviewAccount,
   reviewVideo,
   setPayType,
+  stopTracking,
   updateSettings,
 } from "@/lib/clippers/actions";
 import {
@@ -20,8 +21,10 @@ import {
   AdminTabs,
   ApproveButtons,
   CountBadge,
+  NeedsAttention,
   StatusPill,
   ViewsChart,
+  type UnreadableVideo,
 } from "@/components/clippers/admin-ui";
 
 export const maxDuration = 300;
@@ -107,6 +110,7 @@ export default async function AdminRpmPage() {
     drillVideos,
     accountSummaries,
     snapshots,
+    unreadable,
   ] = await Promise.all([
     getSettings(),
     sql<PendingAccount[]>`
@@ -169,6 +173,13 @@ export default async function AdminRpmPage() {
     sql<Snapshot[]>`
       SELECT captured_at, rpm_views AS value FROM cf_snapshots
       ORDER BY captured_at ASC LIMIT 500`,
+    sql<UnreadableVideo[]>`
+      SELECT v.id, v.url, v.track_error, v.last_checked, a.handle, u.display_name
+      FROM cf_videos v
+      JOIN cf_accounts a ON a.id = v.account_id
+      JOIN cf_users u ON u.id = v.user_id
+      WHERE v.status = 'approved' AND v.track_error <> '' AND u.pay_type = 'per_view'
+      ORDER BY v.last_checked DESC NULLS LAST`,
   ]);
 
   const spent = Number(settings.total_earned_cents);
@@ -417,6 +428,10 @@ export default async function AdminRpmPage() {
             </ul>
           )}
         </section>
+      </div>
+
+      <div className="cf-fade-up cf-delay-3">
+        <NeedsAttention videos={unreadable} action={stopTracking} />
       </div>
 
       {/* Views by account */}

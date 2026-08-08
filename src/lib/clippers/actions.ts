@@ -235,6 +235,22 @@ export async function recordPayment(
   return { ok: "Payment recorded." };
 }
 
+// Stops a dead/unreadable video being re-checked every refresh (each check
+// costs money). Keeps the row and its earnings history intact — only
+// 'approved' videos are refreshed, so this simply retires it.
+export async function stopTracking(formData: FormData) {
+  await requireAdmin();
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id)) return;
+  await sql`
+    UPDATE cf_videos
+    SET status = 'rejected',
+        track_error = 'Stopped tracking — could not be read'
+    WHERE id = ${id}`;
+  revalidatePath("/clippers/admin");
+  revalidatePath("/clippers/admin/fixed");
+}
+
 export async function setPayType(
   _prev: FormState,
   formData: FormData,
@@ -290,7 +306,10 @@ export async function adminRefreshViews(
       `auto-scanned ${r.autoScanned} posts from fixed accounts`,
       `added $${(r.earnedCentsAdded / 100).toFixed(2)} in earnings`,
     ];
-    if (r.missing) bits.push(`${r.missing} unreadable`);
+    if (r.missing)
+      bits.push(
+        `${r.missing} couldn't be read (see "Needs attention" below)`,
+      );
     if (r.budgetExhausted) bits.push("budget is fully used");
     if (r.errors.length) bits.push(`errors: ${r.errors[0]}`);
     return { ok: bits.join(", ") + "." };

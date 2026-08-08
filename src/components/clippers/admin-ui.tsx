@@ -27,6 +27,81 @@ export function ApproveButtons({
   );
 }
 
+export type UnreadableVideo = {
+  id: number;
+  url: string;
+  handle: string;
+  display_name: string;
+  track_error: string;
+  last_checked: string | null;
+};
+
+export function NeedsAttention({
+  videos,
+  action,
+}: {
+  videos: UnreadableVideo[];
+  action: (formData: FormData) => Promise<void>;
+}) {
+  return (
+    <section
+      id="attention"
+      className={`cf-card scroll-mt-24 p-6 ${videos.length > 0 ? "border-amber-400/40 bg-amber-400/5" : ""}`}
+    >
+      <h2 className="flex items-center gap-2 text-xl font-bold tracking-tight">
+        ⚠️ Needs attention
+        <CountBadge n={videos.length} />
+      </h2>
+      {videos.length === 0 ? (
+        <p className="mt-3 text-sm text-white/40">
+          Everything is reading fine ✓
+        </p>
+      ) : (
+        <>
+          <p className="mt-1 text-sm text-white/70">
+            These posts came back empty on the last refresh — almost always
+            because the post was <strong>deleted</strong>, set to{" "}
+            <strong>private</strong>, or the link was wrong. Their view counts
+            are frozen at whatever was last read. Open one to check; if
+            it&apos;s really gone, stop tracking it so it isn&apos;t re-checked
+            (and re-charged) every day.
+          </p>
+          <ul className="mt-4 divide-y divide-white/10">
+            {videos.map((v) => (
+              <li
+                key={v.id}
+                className="flex flex-wrap items-center justify-between gap-3 py-3"
+              >
+                <div className="min-w-0">
+                  <a
+                    href={v.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block max-w-[360px] truncate font-medium text-cf-orange hover:underline"
+                  >
+                    {v.url.replace("https://www.tiktok.com/", "")}
+                  </a>
+                  <p className="truncate text-xs text-white/50">
+                    @{v.handle} · {v.display_name}
+                    {v.last_checked &&
+                      ` · last read ${new Date(v.last_checked).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
+                  </p>
+                </div>
+                <form action={action}>
+                  <input type="hidden" name="id" value={v.id} />
+                  <button className="rounded-full bg-white/10 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-red-500/25 hover:text-red-400">
+                    Stop tracking
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </section>
+  );
+}
+
 export function CountBadge({ n, color = "orange" }: { n: number; color?: string }) {
   if (n === 0) return null;
   return (
