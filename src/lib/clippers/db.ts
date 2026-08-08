@@ -170,7 +170,8 @@ export type VideoRow = {
   account_id: number;
   url: string;
   tiktok_id: string;
-  status: "pending" | "approved" | "rejected";
+  // 'removed' = no longer public, excluded from every total.
+  status: "pending" | "approved" | "rejected" | "removed";
   views: number;
   earned_cents: number;
   last_checked: string | null;

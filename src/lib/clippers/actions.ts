@@ -238,27 +238,58 @@ export async function recordPayment(
 // Stops a dead/unreadable video being re-checked every refresh (each check
 // costs money). Keeps the row and its earnings history intact — only
 // 'approved' videos are refreshed, so this simply retires it.
-// Toggle re-checking for a post. Retired posts keep their views and their
-// earnings — this only controls whether we keep asking TikTok about them.
+// Remove a post from tracking and from every total (or put it back).
+// Removing also credits any budget it consumed back to the campaign.
 export async function stopTracking(formData: FormData) {
   await requireAdmin();
   const id = Number(formData.get("id"));
-  const resume = String(formData.get("resume") ?? "") === "1";
+  const restore = String(formData.get("resume") ?? "") === "1";
   if (!Number.isInteger(id)) return;
-  if (resume) {
-    await sql`
+
+  await sql.begin(async (tx) => {
+    const [v] = await tx<
+      { earned_cents: string; status: string; pay_type: string }[]
+    >`SELECT v.earned_cents, v.status, u.pay_type
+      FROM cf_videos v JOIN cf_users u ON u.id = v.user_id
+      WHERE v.id = ${id} FOR UPDATE OF v`;
+    if (!v) return;
+    const cents = Number(v.earned_cents);
+    const perView = v.pay_type === "per_view";
+
+    if (restore) {
+      if (v.status !== "removed") return;
+      await tx`
+        UPDATE cf_videos
+        SET status = 'approved', tracking = true, missed_count = 0, track_error = ''
+        WHERE id = ${id}`;
+      if (cents > 0 && perView) {
+        await tx`
+          UPDATE cf_settings
+          SET total_earned_cents = total_earned_cents + ${cents}, updated_at = now()
+          WHERE id = 1`;
+      }
+      return;
+    }
+
+    if (v.status === "removed") return;
+    await tx`
       UPDATE cf_videos
-      SET tracking = true, missed_count = 0, track_error = ''
+      SET status = 'removed',
+          tracking = false,
+          track_error = 'Removed — you stopped tracking this post.'
       WHERE id = ${id}`;
-  } else {
-    await sql`
-      UPDATE cf_videos
-      SET tracking = false,
-          track_error = 'Not tracked — you stopped re-checking this post.'
-      WHERE id = ${id}`;
-  }
+    if (cents > 0 && perView) {
+      await tx`
+        UPDATE cf_settings
+        SET total_earned_cents = GREATEST(0, total_earned_cents - ${cents}),
+            updated_at = now()
+        WHERE id = 1`;
+    }
+  });
+
   revalidatePath("/clippers/admin");
   revalidatePath("/clippers/admin/fixed");
+  revalidatePath("/clippers/dashboard");
 }
 
 export async function setPayType(
@@ -318,8 +349,9 @@ export async function adminRefreshViews(
     if (r.discovered) bits.push(`found ${r.discovered} new posts`);
     if (r.retired)
       bits.push(
-        `retired ${r.retired} that are no longer public (views kept)`,
+        `removed ${r.retired} no longer public (views taken out of totals)`,
       );
+    if (r.restored) bits.push(`restored ${r.restored} that came back`);
     if (r.budgetExhausted) bits.push("budget is fully used");
     if (r.errors.length) bits.push(`errors: ${r.errors[0]}`);
     return { ok: bits.join(", ") + "." };

@@ -61,12 +61,13 @@ export function NeedsAttention({
       ) : (
         <>
           <p className="mt-1 text-sm text-white/70">
-            These posts stopped being readable — usually deleted, or set to
-            private when they were reuploaded. Nothing is lost:{" "}
-            <strong>their views still count</strong>, frozen at the last good
-            reading, and a reupload gets picked up as a new post
-            automatically. They&apos;re no longer re-checked, so they cost
-            nothing. If one is public again, hit Re-check.
+            These posts aren&apos;t public any more — deleted, or set to
+            private on a reupload. They&apos;ve been{" "}
+            <strong>removed from every total</strong>: their views no longer
+            count, they&apos;re not re-checked, and any budget they used has
+            been credited back. A reupload is picked up as a new post on its
+            own. If one goes public again it comes back automatically — or
+            hit Restore.
           </p>
           <ul className="mt-4 divide-y divide-white/10">
             {videos.map((v) => (
@@ -85,7 +86,9 @@ export function NeedsAttention({
                   </a>
                   <p className="truncate text-xs text-white/50">
                     @{v.handle} · {v.display_name} ·{" "}
-                    {Number(v.views).toLocaleString("en-US")} views kept
+                    {v.tracking
+                      ? `${Number(v.views).toLocaleString("en-US")} views — retrying`
+                      : `${Number(v.views).toLocaleString("en-US")} views removed from totals`}
                     {v.last_checked &&
                       ` · last read ${new Date(v.last_checked).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`}
                   </p>
@@ -98,7 +101,7 @@ export function NeedsAttention({
                     value={v.tracking ? "0" : "1"}
                   />
                   <button className="rounded-full bg-white/10 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-cf-orange hover:text-cf-black">
-                    {v.tracking ? "Stop re-checking" : "Re-check"}
+                    {v.tracking ? "Remove now" : "Restore"}
                   </button>
                 </form>
               </li>

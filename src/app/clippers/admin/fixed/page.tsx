@@ -131,8 +131,9 @@ export default async function AdminFixedPage() {
       FROM cf_videos v
       JOIN cf_accounts a ON a.id = v.account_id
       JOIN cf_users u ON u.id = v.user_id
-      WHERE v.status = 'approved' AND v.track_error <> '' AND u.pay_type = 'fixed'
-      ORDER BY v.tracking, v.last_checked DESC NULLS LAST`,
+      WHERE v.track_error <> '' AND v.status IN ('approved','removed')
+        AND u.pay_type = 'fixed'
+      ORDER BY v.status DESC, v.last_checked DESC NULLS LAST`,
   ]);
 
   const totalViews = Number(totals[0]?.views ?? 0);

@@ -44,8 +44,13 @@ export default async function Dashboard() {
       WHERE user_id = ${user.id} ORDER BY captured_at ASC LIMIT 500`,
   ]);
 
-  const earned = videos.reduce((sum, v) => sum + Number(v.earned_cents), 0);
-  const totalViews = videos.reduce((sum, v) => sum + Number(v.views), 0);
+  // Only live (approved) videos count — anything removed because it stopped
+  // being public drops out of the totals entirely.
+  const liveVideos = videos.filter((v) => v.status === "approved");
+  const earned = videos
+    .filter((v) => v.status !== "removed")
+    .reduce((sum, v) => sum + Number(v.earned_cents), 0);
+  const totalViews = liveVideos.reduce((sum, v) => sum + Number(v.views), 0);
   const paid = Number(paidRows[0]?.paid ?? 0);
   const owed = Math.max(0, earned - paid);
   const hasApprovedAccount = accounts.some((a) => a.status === "approved");
@@ -58,7 +63,7 @@ export default async function Dashboard() {
   const statCards = isFixed
     ? [
         { label: "Total views", value: fmtViews(totalViews), hot: true },
-        { label: "Videos", value: String(videos.length) },
+        { label: "Videos", value: String(liveVideos.length) },
         { label: "Paid out", value: fmtUsd(paid) },
       ]
     : [

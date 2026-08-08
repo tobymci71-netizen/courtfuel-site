@@ -16,8 +16,10 @@ import { fetchProfilePosts, fetchViewCounts } from "./tiktok";
 //    total earnings can never exceed the campaign budget. Fixed-rate videos
 //    are view-tracked but never earn and never touch the budget.
 // 4. A post that can't be read twice in a row (deleted, or set to private on
-//    a reupload) retires itself: views freeze at the last good reading and
-//    it stops being re-checked, instead of erroring every day.
+//    a reupload) is REMOVED: it stops being tracked and its views drop out
+//    of every total. Anything it earned is credited back to the campaign
+//    budget, so you don't pay for content that isn't public any more. If it
+//    comes back, the next scan restores it automatically.
 
 const BATCH_SIZE = 25;
 const MISS_LIMIT = 2;
@@ -29,6 +31,7 @@ export type RefreshResult = {
   autoScanned: number;
   discovered: number;
   retired: number;
+  restored: number;
   earnedCentsAdded: number;
   budgetExhausted: boolean;
   errors: string[];
@@ -43,6 +46,7 @@ export async function refreshViews(): Promise<RefreshResult> {
     autoScanned: 0,
     discovered: 0,
     retired: 0,
+    restored: 0,
     earnedCentsAdded: 0,
     budgetExhausted: false,
     errors: [],
@@ -74,7 +78,29 @@ export async function refreshViews(): Promise<RefreshResult> {
           VALUES (${acc.user_id}, ${acc.id}, ${post.cleanUrl}, ${post.tiktokId}, ${status})
           ON CONFLICT (tiktok_id) DO NOTHING
           RETURNING id`;
-        if (inserted.length > 0) result.discovered++;
+        if (inserted.length > 0) {
+          result.discovered++;
+          continue;
+        }
+        // Public again after being removed — put it back, and give its
+        // earnings back to the budget they were refunded from.
+        await sql.begin(async (tx) => {
+          const [back] = await tx<{ earned_cents: string }[]>`
+            UPDATE cf_videos
+            SET status = 'approved', tracking = true, missed_count = 0, track_error = ''
+            WHERE tiktok_id = ${post.tiktokId} AND status = 'removed'
+            RETURNING earned_cents`;
+          if (!back) return;
+          result.restored++;
+          const cents = Number(back.earned_cents);
+          if (cents > 0 && acc.pay_type === "per_view") {
+            await tx`
+              UPDATE cf_settings
+              SET total_earned_cents = total_earned_cents + ${cents},
+                  updated_at = now()
+              WHERE id = 1`;
+          }
+        });
       }
     } catch (err) {
       result.errors.push(err instanceof Error ? err.message : String(err));
@@ -122,13 +148,28 @@ export async function refreshViews(): Promise<RefreshResult> {
       result.missing++;
       if (missed >= MISS_LIMIT) {
         result.retired++;
-        await sql`
-          UPDATE cf_videos
-          SET missed_count = ${missed},
-              tracking = false,
-              last_checked = now(),
-              track_error = 'No longer public — deleted or set to private. Views frozen at the last reading.'
-          WHERE id = ${video.id}`;
+        // Not public any more: drop it out of every total, and hand back
+        // whatever budget it had consumed.
+        await sql.begin(async (tx) => {
+          const [v] = await tx<{ earned_cents: string }[]>`
+            SELECT earned_cents FROM cf_videos WHERE id = ${video.id} FOR UPDATE`;
+          await tx`
+            UPDATE cf_videos
+            SET status = 'removed',
+                tracking = false,
+                missed_count = ${missed},
+                last_checked = now(),
+                track_error = 'No longer public — deleted or set to private. Removed from all totals.'
+            WHERE id = ${video.id}`;
+          const cents = Number(v?.earned_cents ?? 0);
+          if (cents > 0 && video.pay_type === "per_view") {
+            await tx`
+              UPDATE cf_settings
+              SET total_earned_cents = GREATEST(0, total_earned_cents - ${cents}),
+                  updated_at = now()
+              WHERE id = 1`;
+          }
+        });
       } else {
         await sql`
           UPDATE cf_videos

@@ -129,7 +129,7 @@ export default async function AdminRpmPage() {
       SELECT u.id AS user_id, u.display_name, u.email, u.payout_method,
              COUNT(v.id) FILTER (WHERE v.status = 'approved') AS videos,
              COALESCE(SUM(v.views) FILTER (WHERE v.status = 'approved'), 0) AS views,
-             COALESCE(SUM(v.earned_cents), 0) AS earned,
+             COALESCE(SUM(v.earned_cents) FILTER (WHERE v.status <> 'removed'), 0) AS earned,
              COALESCE((SELECT SUM(p.amount_cents) FROM cf_payments p WHERE p.user_id = u.id), 0) AS paid
       FROM cf_users u
       LEFT JOIN cf_videos v ON v.user_id = u.id
@@ -179,8 +179,9 @@ export default async function AdminRpmPage() {
       FROM cf_videos v
       JOIN cf_accounts a ON a.id = v.account_id
       JOIN cf_users u ON u.id = v.user_id
-      WHERE v.status = 'approved' AND v.track_error <> '' AND u.pay_type = 'per_view'
-      ORDER BY v.tracking, v.last_checked DESC NULLS LAST`,
+      WHERE v.track_error <> '' AND v.status IN ('approved','removed')
+        AND u.pay_type = 'per_view'
+      ORDER BY v.status DESC, v.last_checked DESC NULLS LAST`,
   ]);
 
   const spent = Number(settings.total_earned_cents);
