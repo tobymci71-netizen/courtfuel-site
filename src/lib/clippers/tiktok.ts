@@ -57,18 +57,110 @@ type ApifyItem = {
   [key: string]: unknown;
 };
 
-// Fetches current view counts for a batch of TikTok post URLs.
-// Returns a map of tiktokId -> views for every post the scraper found.
+const UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+// --- Free provider 1: read the post's own public page ----------------------
+// TikTok embeds the post's stats as JSON in the page it serves to browsers.
+// No key, no quota, no third party.
+async function viewsFromTikTok(
+  url: string,
+): Promise<{ id: string; views: number } | null> {
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": UA, "Accept-Language": "en-US,en;q=0.9" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const m = html.match(
+      /<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__" type="application\/json">([\s\S]*?)<\/script>/,
+    );
+    if (!m) return null;
+    const scope = (JSON.parse(m[1]) as Record<string, unknown>)?.[
+      "__DEFAULT_SCOPE__"
+    ] as Record<string, { itemInfo?: { itemStruct?: ApifyItem } }> | undefined;
+    const item = scope?.["webapp.video-detail"]?.itemInfo?.itemStruct as
+      | { id?: string; stats?: { playCount?: number } }
+      | undefined;
+    const id = item?.id ? String(item.id) : null;
+    const views = Number(item?.stats?.playCount);
+    if (!id || !Number.isFinite(views)) return null;
+    return { id, views };
+  } catch {
+    return null;
+  }
+}
+
+// --- Free provider 2: public tikwm endpoint --------------------------------
+async function viewsFromTikwm(
+  url: string,
+): Promise<{ id: string; views: number } | null> {
+  try {
+    const res = await fetch(
+      `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`,
+      { cache: "no-store", signal: AbortSignal.timeout(15000) },
+    );
+    if (!res.ok) return null;
+    const j = (await res.json()) as {
+      code?: number;
+      data?: { id?: string; play_count?: number };
+    };
+    if (j?.code !== 0) return null;
+    const id = j.data?.id ? String(j.data.id) : null;
+    const views = Number(j.data?.play_count);
+    if (!id || !Number.isFinite(views)) return null;
+    return { id, views };
+  } catch {
+    return null;
+  }
+}
+
+// Current view counts for a batch of post URLs, tiktokId -> views.
+// Free sources are tried first; Apify is only used for whatever they miss,
+// and only when a token is configured.
 export async function fetchViewCounts(
   urls: string[],
 ): Promise<Map<string, number>> {
-  const token = process.env.APIFY_TOKEN;
-  if (!token) {
-    throw new Error(
-      "APIFY_TOKEN is not set. Create a free account at apify.com, then copy your API token from Settings → API & Integrations.",
+  const map = new Map<string, number>();
+  if (urls.length === 0) return map;
+
+  const missed: string[] = [];
+  const CONCURRENCY = 4;
+  for (let i = 0; i < urls.length; i += CONCURRENCY) {
+    const slice = urls.slice(i, i + CONCURRENCY);
+    const results = await Promise.all(
+      slice.map(async (u) => ({
+        url: u,
+        hit: (await viewsFromTikTok(u)) ?? (await viewsFromTikwm(u)),
+      })),
     );
+    for (const { url, hit } of results) {
+      if (hit) map.set(hit.id, Math.max(hit.views, map.get(hit.id) ?? 0));
+      else missed.push(url);
+    }
   }
-  if (urls.length === 0) return new Map();
+
+  if (missed.length > 0 && process.env.APIFY_TOKEN) {
+    try {
+      const paid = await fetchViewCountsApify(missed);
+      for (const [id, views] of paid) {
+        map.set(id, Math.max(views, map.get(id) ?? 0));
+      }
+    } catch {
+      // Out of credit or the actor failed — the free results still stand.
+    }
+  }
+  return map;
+}
+
+// Paid fallback (Apify). Only called for posts the free sources missed.
+async function fetchViewCountsApify(
+  urls: string[],
+): Promise<Map<string, number>> {
+  const token = process.env.APIFY_TOKEN;
+  if (!token || urls.length === 0) return new Map();
 
   const base = process.env.APIFY_BASE_URL ?? "https://api.apify.com";
   const res = await fetch(
@@ -115,12 +207,15 @@ export type ProfilePost = {
 
 // Scrapes the latest posts (videos AND slideshows) from whole TikTok
 // profiles, so fixed-rate creators never have to submit links manually.
+// Discovering brand-new posts needs a full channel listing, which TikTok
+// only serves to signed requests — so this is the one part that still needs
+// Apify. Without a working token it returns nothing and the rest of the
+// refresh (updating views on posts we already know) carries on for free.
 export async function fetchProfilePosts(
   handles: string[],
 ): Promise<ProfilePost[]> {
   const token = process.env.APIFY_TOKEN;
-  if (!token) throw new Error("APIFY_TOKEN is not set.");
-  if (handles.length === 0) return [];
+  if (!token || handles.length === 0) return [];
 
   const base = process.env.APIFY_BASE_URL ?? "https://api.apify.com";
   const res = await fetch(

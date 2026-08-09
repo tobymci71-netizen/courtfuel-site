@@ -103,7 +103,14 @@ export async function refreshViews(): Promise<RefreshResult> {
         });
       }
     } catch (err) {
-      result.errors.push(err instanceof Error ? err.message : String(err));
+      // Discovery is the only paid step. If it's unavailable (no Apify
+      // credit), view updates below still run for free.
+      const msg = err instanceof Error ? err.message : String(err);
+      result.errors.push(
+        /limit|quota|credit|402|403/i.test(msg)
+          ? "New-post discovery paused (Apify credit used up) — view updates still ran."
+          : msg,
+      );
     }
   }
 
