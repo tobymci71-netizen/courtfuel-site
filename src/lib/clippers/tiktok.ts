@@ -45,7 +45,13 @@ export function parseProfileUrl(
 // --- View fetching via Apify ----------------------------------------------
 
 const APIFY_ACTOR = "clockworks~tiktok-video-scraper";
-const APIFY_PROFILE_ACTOR = "clockworks~tiktok-profile-scraper";
+// Discovery actors, cheapest first. apidojo bills ~$0.0003 per post vs
+// clockworks' ~$0.003 — 10x less for the same job — so the free monthly
+// credit stretches to roughly 16,000 posts instead of 1,600.
+const APIFY_PROFILE_ACTORS = [
+  "apidojo~tiktok-scraper",
+  "clockworks~tiktok-profile-scraper",
+];
 const POSTS_PER_PROFILE = 30;
 
 type ApifyItem = {
@@ -218,41 +224,77 @@ export async function fetchProfilePosts(
   if (!token || handles.length === 0) return [];
 
   const base = process.env.APIFY_BASE_URL ?? "https://api.apify.com";
-  const res = await fetch(
-    `${base}/v2/acts/${APIFY_PROFILE_ACTOR}/run-sync-get-dataset-items?token=${token}&timeout=280`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        profiles: handles,
-        resultsPerPage: POSTS_PER_PROFILE,
-        profileSorting: "latest",
-      }),
-      cache: "no-store",
-    },
-  );
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(
-      `Apify profile scan failed (${res.status}): ${body.slice(0, 300)}`,
-    );
-  }
-  const items = (await res.json()) as ApifyItem[];
+  let lastError = "";
 
-  const posts: ProfilePost[] = [];
-  for (const item of items) {
-    const handle = String(item.authorMeta?.name ?? "").toLowerCase();
-    const id = item.id ? String(item.id) : null;
-    const views = Number(item.playCount ?? 0);
-    if (!handle || !id || !Number.isFinite(views)) continue;
-    const src = String(item.webVideoUrl ?? "");
-    const kind = /\/photo\//i.test(src) ? "photo" : "video";
-    posts.push({
-      handle,
-      tiktokId: id,
-      views,
-      cleanUrl: `https://www.tiktok.com/@${handle}/${kind}/${id}`,
-    });
+  for (const actor of APIFY_PROFILE_ACTORS) {
+    // Each actor takes a different input shape.
+    const body = actor.startsWith("apidojo")
+      ? {
+          startUrls: handles.map((h) => `https://www.tiktok.com/@${h}`),
+          maxItems: POSTS_PER_PROFILE * handles.length,
+        }
+      : {
+          profiles: handles,
+          resultsPerPage: POSTS_PER_PROFILE,
+          profileSorting: "latest",
+        };
+
+    let items: ApifyItem[];
+    try {
+      const res = await fetch(
+        `${base}/v2/acts/${actor}/run-sync-get-dataset-items?token=${token}&timeout=280`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+          cache: "no-store",
+        },
+      );
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        lastError = `${actor} failed (${res.status}): ${text.slice(0, 200)}`;
+        continue;
+      }
+      const parsed = await res.json();
+      if (!Array.isArray(parsed)) {
+        lastError = `${actor}: ${JSON.stringify(parsed).slice(0, 200)}`;
+        continue;
+      }
+      items = parsed as ApifyItem[];
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : String(err);
+      continue;
+    }
+
+    // Field names vary between actors — read defensively.
+    const posts: ProfilePost[] = [];
+    for (const item of items) {
+      const author = (item.authorMeta ?? item.author ?? {}) as {
+        name?: string;
+        uniqueId?: string;
+        unique_id?: string;
+      };
+      const handle = String(
+        author.name ?? author.uniqueId ?? author.unique_id ?? "",
+      ).toLowerCase();
+      const stats = (item.stats ?? {}) as { playCount?: number };
+      const id = String(item.id ?? item.aweme_id ?? "");
+      const views = Number(
+        item.playCount ?? stats.playCount ?? item.play_count ?? 0,
+      );
+      if (!handle || !id || !Number.isFinite(views)) continue;
+      const src = String(item.webVideoUrl ?? item.postPage ?? "");
+      const kind = /\/photo\//i.test(src) ? "photo" : "video";
+      posts.push({
+        handle,
+        tiktokId: id,
+        views,
+        cleanUrl: `https://www.tiktok.com/@${handle}/${kind}/${id}`,
+      });
+    }
+    if (posts.length > 0) return posts;
+    lastError = `${actor} returned nothing usable`;
   }
-  return posts;
+
+  throw new Error(lastError || "Profile scan unavailable");
 }

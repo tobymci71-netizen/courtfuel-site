@@ -108,6 +108,9 @@ async function migrate() {
       captured_at TIMESTAMPTZ NOT NULL DEFAULT now(),
       total_views BIGINT NOT NULL DEFAULT 0
     )`;
+  // Discovery is the only step that costs money, so it's throttled to once
+  // a day no matter how often the refresh button is pressed.
+  await sql`ALTER TABLE cf_settings ADD COLUMN IF NOT EXISTS last_discovery_at TIMESTAMPTZ`;
   await sql`ALTER TABLE cf_snapshots ADD COLUMN IF NOT EXISTS fixed_views BIGINT NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE cf_snapshots ADD COLUMN IF NOT EXISTS rpm_views BIGINT NOT NULL DEFAULT 0`;
   // Tracking state: a post that stops being publicly readable (deleted or

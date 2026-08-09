@@ -60,7 +60,15 @@ export async function refreshViews(): Promise<RefreshResult> {
     FROM cf_accounts a JOIN cf_users u ON u.id = a.user_id
     WHERE a.status = 'approved'`;
 
-  if (accounts.length > 0) {
+  // Only look for brand-new posts once a day — that's the one paid step,
+  // so repeated refresh clicks must not repeat it.
+  const [disc] = await sql<{ due: boolean }[]>`
+    SELECT (last_discovery_at IS NULL
+            OR last_discovery_at < now() - interval '20 hours') AS due
+    FROM cf_settings WHERE id = 1`;
+  const discoveryDue = Boolean(disc?.due) && Boolean(process.env.APIFY_TOKEN);
+
+  if (accounts.length > 0 && discoveryDue) {
     const byHandle = new Map(accounts.map((a) => [a.handle, a]));
     try {
       const posts = await fetchProfilePosts([...byHandle.keys()]);
@@ -108,10 +116,13 @@ export async function refreshViews(): Promise<RefreshResult> {
       const msg = err instanceof Error ? err.message : String(err);
       result.errors.push(
         /limit|quota|credit|402|403/i.test(msg)
-          ? "New-post discovery paused (Apify credit used up) — view updates still ran."
+          ? "New-post discovery paused (Apify credit used up) — view updates still ran, free."
           : msg,
       );
     }
+    // Mark the attempt either way so a failing scan can't be retried in a
+    // loop, burning credit each time.
+    await sql`UPDATE cf_settings SET last_discovery_at = now() WHERE id = 1`;
   }
 
   // ---- 2. Collect every video we're still tracking ----
