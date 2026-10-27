@@ -1,0 +1,594 @@
+/* CourtFuel homepage · Concept A · "Train like your position"
+   Mobile-first. Tokens first; orange is reserved for install buttons.
+
+   Ported from the approved concept (CourtFuel-design-archive/2026-10-27-site/
+   concepts/a-train-like-your-position/style.css) with its values unchanged.
+   Every rule is scoped under .cf-home, the homepage's root element, so none of
+   it reaches /clippers or the legal pages. That matters beyond the first load:
+   Next keeps a route's stylesheet in the document after client-side
+   navigation, so a bare .wrap, .cta or .phone would follow the visitor around.
+   Fonts come from next/font: Archivo from src/app/(home)/page.tsx as
+   --font-archivo-face (the face alone, without next/font's wide Arial
+   fallback), Inter from the root layout as --font-inter. */
+
+/* ---- behind the page: overscroll and under Safari's bars ----
+   Home only. :has() matches only while the homepage is in the document, so
+   every other route keeps globals.css's #0a0a0a. */
+html:has(.cf-home),
+body:has(.cf-home) { background: #1a110b; }
+body:has(.cf-home) { margin: 0; overflow-x: hidden; }
+
+/* ---- browser defaults the concept relies on ----
+   globals.css brings in Tailwind's preflight, which the concept was not built
+   on. These put back the few defaults it depends on, inside .cf-home only. */
+.cf-home { -webkit-tap-highlight-color: initial; }
+/* the FAQ's Privacy Policy link is the one link left underlined */
+.cf-home a { text-decoration: underline; }
+/* .final__icon sits on a centred line of text rather than as a block */
+.cf-home img,
+.cf-home svg { display: inline; vertical-align: baseline; }
+/* the hint's close button keeps the system font and padding */
+.cf-home button { font: revert; padding: revert; }
+
+.cf-home {
+  /* warm hardwood darks */
+  --wood-950: #120b07;
+  --wood-900: #1a110b;
+  --wood-800: #24160d;
+  --wood-700: #2f1d11;
+  /* warm lights */
+  --cream: #f5efe5;
+  --card: #fffaf1;
+  --rule: #e2d5c0;
+  --ink: #1d1611;
+  --ink-2: #54473b;
+  /* second accent: teal (the Franchise badge's colour) */
+  --teal: #5fd6c6;
+  --teal-ink: #0b6a60;
+  --teal-deep: #0c2c2a;
+  /* ranks */
+  --sand-1: #f4e6c2;
+  --sand-2: #edd7a2;
+  --gold-ink: #7f540b;
+  /* fuel */
+  --sage: #e4ece0;
+  --sage-card: #f6f9f3;
+  --green-ink: #1c6642;
+  /* warm whites on dark */
+  --paper: #fff6ea;
+  --paper-2: rgba(255, 240, 225, 0.78);
+  --paper-3: rgba(255, 240, 225, 0.6);
+  /* install colour: the single most saturated thing on the page */
+  --cta: #ff6b1a;
+  --cta-hi: #ff8240;
+  --cta-ink: #1c0b02;
+
+  --gutter: 20px;
+  --radius-card: 28px;
+}
+
+.cf-home *, .cf-home *::before, .cf-home *::after { box-sizing: border-box; }
+/* The concept's body rule. Its margin and overflow-x live on body itself
+   (top of this file): on this div, overflow-x would make a scroll container. */
+.cf-home {
+  background: var(--wood-900);
+  color: var(--paper);
+  font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.cf-home img { max-width: 100%; }
+.cf-home a { color: inherit; }
+.cf-home h1, .cf-home h2, .cf-home h3, .cf-home p, .cf-home figure, .cf-home dl, .cf-home dd, .cf-home ol, .cf-home ul { margin: 0; }
+.cf-home h2, .cf-home h3, .cf-home .lede, .cf-home .hero__sub, .cf-home .micro, .cf-home .fine, .cf-home .step__body, .cf-home .pos-note, .cf-home .foot__legal { text-wrap: balance; }
+/* Safari at 375px left one-word last lines here ("goal.", "players?", "content"). */
+.cf-home .after__list p, .cf-home .faq summary, .cf-home .clip-band__h { text-wrap: balance; }
+.cf-home ol, .cf-home ul { padding: 0; list-style: none; }
+
+.cf-home .wrap { max-width: 1160px; margin: 0 auto; padding: 0 var(--gutter); }
+
+/* ---- the app's two type voices ----
+   PRINT = SF Pro Compressed Black in the app -> Archivo at width 62, weight 900.
+   SET   = SF Pro Expanded Bold, tracked +0.14em -> Archivo at width 125. */
+.cf-home .print {
+  font-family: var(--font-archivo-face, Archivo), "Arial Narrow", "Helvetica Neue", sans-serif;
+  font-stretch: 62%;
+  font-weight: 900;
+  text-transform: uppercase;
+  line-height: 0.92;
+  letter-spacing: 0.004em;
+}
+.cf-home .set {
+  font-family: var(--font-archivo-face, Archivo), "Helvetica Neue", sans-serif;
+  font-stretch: 125%;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.cf-home .eyebrow { color: var(--teal); }
+.cf-home .eyebrow--teal { color: var(--teal-ink); }
+.cf-home .sec--wood .eyebrow--teal, .cf-home .sec--teal .eyebrow--teal, .cf-home .after .eyebrow--teal, .cf-home .clip-band .eyebrow--teal { color: var(--teal); }
+.cf-home .eyebrow--gold { color: var(--gold-ink); }
+.cf-home .eyebrow--green { color: var(--green-ink); }
+
+.cf-home .h2 { font-size: clamp(40px, 10.6vw, 72px); margin-top: 12px; }
+.cf-home .h3 { font-size: 30px; margin-top: 6px; }
+.cf-home .lede { font-size: 17px; line-height: 1.5; margin-top: 14px; max-width: 34em; color: var(--ink-2); }
+.cf-home .lede--small { font-size: 15.5px; margin-top: 10px; }
+.cf-home .sec--wood .lede, .cf-home .sec--teal .lede { color: var(--paper-2); }
+.cf-home .fine { font-size: 14px; line-height: 1.45; margin-top: 8px; }
+.cf-home .center { text-align: center; }
+
+/* =========================================================
+   INSTALL BUTTON — our own button, not Apple's badge.
+   App icon + action + "on the App Store" in plain text, no Apple logo.
+   ========================================================= */
+.cf-home .cta {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 420px;
+  min-height: 66px;
+  padding: 11px 16px 11px 12px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, var(--cta-hi) 0%, var(--cta) 100%);
+  color: var(--cta-ink);
+  text-decoration: none;
+  text-align: left;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    0 2px 0 #c44a08,
+    0 16px 34px -14px rgba(255, 107, 26, 0.75);
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.1s ease-out, filter 0.1s ease-out;
+}
+.cf-home .cta:active { transform: scale(0.97); filter: brightness(0.94); }
+.cf-home .cta:focus-visible { outline: 3px solid var(--teal); outline-offset: 3px; }
+.cf-home .cta__icon { flex: none; width: 40px; height: 40px; border-radius: 22.37%; box-shadow: 0 0 0 1px rgba(28, 11, 2, 0.28); }
+.cf-home .cta__text { min-width: 0; display: flex; flex-direction: column; }
+.cf-home .cta__label { font-size: 17px; font-weight: 700; letter-spacing: -0.012em; line-height: 1.2; text-wrap: balance; }
+.cf-home .cta__sub { font-size: 13px; font-weight: 500; line-height: 1.3; margin-top: 2px; opacity: 0.78; text-wrap: balance; }
+.cf-home .cta__arrow { flex: none; width: 20px; height: 20px; margin-left: auto; }
+@media (max-width: 374px) { .cf-home .cta__arrow { display: none; } }
+@media (hover: hover) { .cf-home .cta:hover { filter: brightness(1.05); } }
+
+/* one sheen across the hero button, once, then still */
+@media (prefers-reduced-motion: no-preference) {
+  .cf-home .cta--hero::after {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 45%;
+    background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.55) 50%, transparent 100%);
+    transform: translateX(-160%) skewX(-18deg);
+    animation: cf-home-sheen 1.1s cubic-bezier(0.4, 0, 0.2, 1) 1.2s 1 both;
+    pointer-events: none;
+  }
+}
+@keyframes cf-home-sheen { to { transform: translateX(330%) skewX(-18deg); } }
+
+.cf-home .micro { margin-top: 12px; font-size: 13px; line-height: 1.5; color: var(--paper-3); }
+/* At 375px the first micro line fills ~90% of the column in Safari. If a wider
+   Safari render tips it over, it breaks between the two sentences, not mid-phrase. */
+.cf-home .nw { white-space: nowrap; }
+
+/* =========================================================
+   PHONES — straight-on, real screenshots, a plain bezel.
+   --pw is the outer width; --f is how much of the screen a crop shows.
+   ========================================================= */
+.cf-home .phone {
+  --pw: min(72vw, 300px);
+  flex: none;
+  width: var(--pw);
+  padding: 7px;
+  border-radius: calc(var(--pw) * 0.158);
+  background: #0a0706;
+  box-shadow:
+    0 0 0 1.5px #4b4038,
+    0 0 0 3px rgba(10, 7, 6, 0.6),
+    0 34px 60px -28px rgba(20, 10, 4, 0.6);
+}
+.cf-home .phone img { display: block; width: 100%; height: auto; border-radius: calc(var(--pw) * 0.136); background: #0d0907; }
+
+.cf-home .crop {
+  --pw: min(72vw, 300px);
+  display: flex;
+  justify-content: center;
+  /* flex-start, not the default stretch: stretch shrank the bezel to the crop's
+     height, so its rounded bottom corners showed with the screenshot hanging out below. */
+  align-items: flex-start;
+  height: calc((var(--pw) - 14px) * 2.1727 * var(--f) + 11px);
+  padding-top: 4px;
+  overflow: hidden;
+  margin-top: 20px;
+}
+.cf-home .crop .phone { --pw: inherit; width: var(--pw); }
+.cf-home .crop--fade { -webkit-mask-image: linear-gradient(#000 80%, transparent); mask-image: linear-gradient(#000 80%, transparent); }
+
+/* =========================================================
+   HERO
+   ========================================================= */
+.cf-home .hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 55% at 50% -6%, rgba(255, 172, 86, 0.30), transparent 62%),
+    radial-gradient(70% 40% at 50% 80%, rgba(95, 214, 198, 0.12), transparent 70%),
+    linear-gradient(180deg, #3a2413 0%, #29190e 55%, #1f130b 100%);
+}
+/* faint hardwood board seams, lower half only */
+.cf-home .hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: repeating-linear-gradient(90deg, rgba(255, 220, 180, 0.035) 0 1px, transparent 1px 58px);
+  -webkit-mask-image: linear-gradient(transparent 35%, #000 100%);
+  mask-image: linear-gradient(transparent 35%, #000 100%);
+}
+
+.cf-home .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; height: 64px; }
+.cf-home .brand { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; text-decoration: none; font-weight: 700; font-size: 18px; letter-spacing: -0.02em; color: var(--paper); }
+.cf-home .brand img { width: 30px; height: 30px; border-radius: 22.37%; }
+.cf-home .nav { display: none; }
+.cf-home .clip-link {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px;
+  border-radius: 999px; border: 1px solid rgba(255, 240, 225, 0.26);
+  font-size: 14px; font-weight: 600; text-decoration: none; color: var(--paper);
+}
+
+.cf-home .hero__grid { padding: 10px var(--gutter) 60px; }
+/* Landscape on a notched iPhone: viewport-fit=cover lets the page run under
+   the Dynamic Island, so the side gutters grow to the safe area. The insets
+   are zero in portrait, where nothing changes. After .hero__grid, which is
+   also a .wrap, so its shorthand padding doesn't undo this. */
+.cf-home .wrap {
+  padding-left: max(var(--gutter), env(safe-area-inset-left));
+  padding-right: max(var(--gutter), env(safe-area-inset-right));
+}
+.cf-home .hero__copy { text-align: center; }
+.cf-home .hero__h1 { font-size: clamp(46px, 12.6vw, 104px); margin-top: 14px; color: var(--paper); }
+.cf-home .hero__h1 span { display: block; }
+.cf-home .hero__sub { font-size: 17px; line-height: 1.45; color: var(--paper-2); margin: 14px auto 0; max-width: 21em; }
+.cf-home .hero__copy .cta { margin: 24px auto 0; }
+.cf-home .hero__phone { display: flex; justify-content: center; margin-top: 30px; }
+.cf-home .phone--hero { --pw: min(78vw, 330px); }
+@media (prefers-reduced-motion: no-preference) {
+  .cf-home .phone--hero { animation: cf-home-rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.05s both; }
+}
+@keyframes cf-home-rise { from { opacity: 0; transform: translateY(28px); } }
+
+/* =========================================================
+   SECTIONS
+   ========================================================= */
+.cf-home .sec { padding: 68px 0 76px; }
+.cf-home .sec--tight { padding-top: 24px; }
+.cf-home .sec__head { max-width: 680px; margin-bottom: 32px; }
+.cf-home .sec--cream { background: var(--cream); color: var(--ink); }
+.cf-home .sec--wood {
+  background:
+    radial-gradient(90% 55% at 85% 0%, rgba(255, 160, 80, 0.13), transparent 60%),
+    var(--wood-800);
+  color: var(--paper);
+}
+.cf-home .sec--sand { background: linear-gradient(180deg, var(--sand-1) 0%, var(--sand-2) 100%); color: var(--ink); }
+.cf-home .sec--sage { background: var(--sage); color: #14261b; }
+.cf-home .sec--teal {
+  background:
+    radial-gradient(100% 60% at 15% 0%, rgba(95, 214, 198, 0.16), transparent 60%),
+    var(--teal-deep);
+  color: #effaf8;
+}
+
+/* --- Training: the plan --- */
+.cf-home .plan-grid { display: grid; gap: 18px; }
+.cf-home .pos-list li {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 0; border-bottom: 1px solid var(--rule);
+}
+.cf-home .pos-list li:first-child { border-top: 1px solid var(--rule); }
+.cf-home .pos-tag {
+  flex: none; display: grid; place-items: center;
+  width: 46px; height: 46px; border-radius: 13px;
+  background: var(--ink); color: var(--paper); font-size: 22px;
+}
+.cf-home .pos-list b { display: block; font-size: 16px; font-weight: 600; line-height: 1.3; }
+.cf-home .pos-list i { display: block; font-style: normal; font-size: 14.5px; color: var(--ink-2); line-height: 1.35; }
+.cf-home .pos-note {
+  margin-top: 16px; padding-left: 14px; border-left: 3px solid var(--teal-ink);
+  font-size: 16px; font-weight: 600; color: var(--ink);
+}
+.cf-home .positions { margin-bottom: 18px; }
+
+.cf-home .step, .cf-home .fuel-card {
+  border-radius: var(--radius-card);
+  padding: 24px 22px 0;
+  overflow: hidden;
+}
+.cf-home .step { background: var(--card); border: 1px solid var(--rule); }
+.cf-home .step__n { font-size: 20px; color: var(--teal-ink); }
+/* Card headings break on purpose rather than running edge to edge: at 402px
+   "Build your training week" filled the card with ~1% to spare in Safari,
+   and "Your game plan, sorted" with ~7%. 9.6em wraps both into two balanced
+   lines on every phone, while "This week's training" (8.4em) stays on one. */
+.cf-home .step .h3, .cf-home .fuel-card .h3 { max-width: 9.6em; }
+.cf-home .step__body { font-size: 16px; line-height: 1.5; margin-top: 10px; color: var(--ink-2); }
+
+/* --- Training: the drills --- */
+.cf-home .drills { display: grid; gap: 34px; }
+.cf-home .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 26px; }
+.cf-home .fact {
+  padding: 14px 14px 16px; border-radius: 18px;
+  background: rgba(255, 240, 225, 0.05); border: 1px solid rgba(255, 240, 225, 0.10);
+}
+.cf-home .fact dt { color: var(--teal); font-size: 10px; }
+.cf-home .fact dd { font-feature-settings: "calt" 0; font-size: 17px; font-weight: 600; line-height: 1.3; margin-top: 8px; color: var(--paper); text-wrap: balance; }
+
+.cf-home .zoom { max-width: 460px; width: 100%; margin: 0 auto; }
+/* Shows x 8–652, y 354–1201 of the 660 x 1434 Train screen, slightly magnified.
+   The old crop (y 365) put "Ball handling & finishing" ~5px under the frame edge
+   and the 0/3 pill in the rounded corner. y 354–1201 is clean app background
+   (#0d0906) above the header and between drill 2 and drill 3, and the top and
+   bottom borders are that same colour, so the screen gets breathing room with no
+   seam. Borders, not padding: overflow clips at the padding edge, so padding would
+   let drill 3's top rule show through. The 1px outline moves to a box-shadow. */
+.cf-home .zoom__frame {
+  box-sizing: content-box;
+  aspect-ratio: 644 / 847;
+  overflow: hidden;
+  border-radius: 26px;
+  background: #0d0906;
+  border: solid #0d0906;
+  border-width: 12px 0 10px;
+  box-shadow: 0 0 0 1px rgba(255, 240, 225, 0.10), 0 40px 70px -36px rgba(0, 0, 0, 0.7);
+}
+.cf-home .zoom__frame img { display: block; width: 102.484%; max-width: none; height: auto; margin-left: -1.242%; margin-top: -54.969%; }
+.cf-home .zoom figcaption, .cf-home .gc__card figcaption { margin-top: 12px; font-size: 13px; color: var(--paper-3); text-align: center; }
+
+/* --- Training: the ranks --- */
+.cf-home .ranks { display: grid; gap: 30px; }
+.cf-home .ladder { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 28px; }
+.cf-home .ladder li {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 10px 2px 10px; border-radius: 16px;
+  background: rgba(255, 252, 244, 0.6); border: 1px solid rgba(127, 84, 11, 0.14);
+}
+.cf-home .ladder img { width: 52px; height: 52px; }
+.cf-home .ladder b { font-size: 12px; font-weight: 700; margin-top: 4px; line-height: 1.2; }
+.cf-home .ladder span { font-size: 11.5px; font-weight: 600; color: var(--gold-ink); font-variant-numeric: tabular-nums; }
+.cf-home .ranks__phone { display: flex; justify-content: center; }
+.cf-home .ranks__phone .crop { margin-top: 0; }
+.cf-home .inline-cta { display: flex; justify-content: center; margin-top: 36px; }
+
+/* --- Fuel: the other half --- */
+.cf-home .fuel-grid { display: grid; gap: 18px; }
+.cf-home .fuel-card { background: var(--sage-card); border: 1px solid #d0dcc9; display: flex; flex-direction: column; }
+/* side by side the two cards share a height: keep both phones running off the card's bottom edge */
+.cf-home .fuel-card > .crop { margin-top: auto; }
+.cf-home .fuel-card > .fine { padding-bottom: 20px; }
+.cf-home .fuel-card .step__body { color: #3d4d42; }
+.cf-home .fuel-card .fine { color: #4e5f53; }
+
+/* --- Game Card --- */
+.cf-home .gc { display: grid; gap: 30px; }
+.cf-home .gc__card { max-width: 440px; width: 100%; margin: 0 auto; }
+.cf-home .gc__card img {
+  display: block; width: 100%; height: auto; border-radius: 22px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.07), 0 40px 80px -34px rgba(0, 0, 0, 0.75);
+}
+.cf-home .gc__card figcaption { color: rgba(239, 250, 248, 0.6); }
+
+/* --- Pricing --- */
+.cf-home .price-grid { display: grid; gap: 18px; }
+.cf-home .pro {
+  background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius-card);
+  padding: 26px 20px 22px;
+  box-shadow: 0 30px 60px -44px rgba(70, 40, 10, 0.45);
+}
+.cf-home .ticks li { position: relative; padding: 9px 0 9px 34px; font-size: 16.5px; font-weight: 500; line-height: 1.4; text-wrap: balance; }
+.cf-home .ticks li::before {
+  content: ""; position: absolute; left: 0; top: 10px; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--teal-ink) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 12.5l4 4 8-9' fill='none' stroke='%23fff' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 15px no-repeat;
+}
+.cf-home .pro__plans { font-size: 30px; margin-top: 22px; }
+.cf-home .fine--ink { color: var(--ink-2); }
+.cf-home .pro .cta { margin: 20px auto 0; }
+/* Inside the Pro card the button is ~40px narrower than the hero's. At 375px
+   (SE, mini) Safari wrapped it to four lines ("Build your training / week",
+   "Get CourtFuel on the App / Store"), and at 402px it fit with ~6% to spare.
+   Below 440px: no arrow and slightly tighter insets on this one button (the
+   card keeps its padding, so the ticks above still have room), which leaves
+   the text 221px at 375 (needs ~195) and 248px at 402. */
+@media (max-width: 439px) {
+  .cf-home .pro .cta { gap: 10px; padding-left: 10px; padding-right: 12px; }
+  .cf-home .pro .cta__arrow { display: none; }
+}
+.cf-home .pro .center { margin-top: 12px; }
+
+.cf-home .after { background: var(--wood-800); color: var(--paper); border-radius: var(--radius-card); padding: 26px 20px; }
+.cf-home .after__list { margin-top: 14px; }
+.cf-home .after__list li { display: flex; gap: 14px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid rgba(255, 240, 225, 0.10); }
+.cf-home .after__list li:last-child { border-bottom: 0; }
+.cf-home .after__list span { flex: none; width: 22px; font-size: 26px; color: var(--teal); }
+.cf-home .after__list p { font-size: 16.5px; line-height: 1.45; color: var(--paper-2); }
+
+/* --- FAQ --- */
+.cf-home .faq__list { max-width: 780px; border-top: 1px solid var(--rule); }
+.cf-home .faq details { border-bottom: 1px solid var(--rule); }
+.cf-home .faq summary {
+  list-style: none; cursor: pointer; position: relative;
+  padding: 18px 40px 18px 0; font-size: 17px; font-weight: 600; line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+}
+.cf-home .faq summary::-webkit-details-marker { display: none; }
+.cf-home .faq summary::after {
+  content: "+"; position: absolute; right: 4px; top: 13px; font-size: 26px; font-weight: 400;
+  color: var(--teal-ink); transition: transform 0.2s ease;
+}
+.cf-home .faq details[open] summary::after { transform: rotate(45deg); }
+.cf-home .faq details p { padding: 0 0 20px; font-size: 16px; line-height: 1.55; color: var(--ink-2); }
+.cf-home .faq details a { color: var(--teal-ink); }
+
+.cf-home .clip-band {
+  display: grid; gap: 16px; margin-top: 52px;
+  background: var(--teal-deep); color: #effaf8;
+  border-radius: 24px; padding: 22px 20px;
+}
+.cf-home .clip-band__h { font-size: 19px; font-weight: 700; line-height: 1.3; margin-top: 8px; }
+.cf-home .clip-band__b { font-size: 15px; line-height: 1.5; margin-top: 6px; color: rgba(239, 250, 248, 0.74); }
+.cf-home .ghost {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 0 20px;
+  border-radius: 14px; border: 1.5px solid rgba(239, 250, 248, 0.42);
+  font-size: 15.5px; font-weight: 600; text-decoration: none; color: #effaf8;
+}
+
+/* --- Final --- */
+.cf-home .final {
+  background:
+    radial-gradient(90% 60% at 50% 0%, rgba(255, 168, 82, 0.22), transparent 64%),
+    linear-gradient(180deg, #2e1c10 0%, var(--wood-900) 100%);
+  color: var(--paper);
+  padding: 80px 0 86px;
+  text-align: center;
+}
+.cf-home .final__icon { width: 84px; height: 84px; border-radius: 22.37%; box-shadow: 0 20px 40px -18px rgba(0, 0, 0, 0.7); }
+.cf-home .final__h { max-width: 13em; margin: 22px auto 0; }
+.cf-home .final .cta { margin: 28px auto 0; }
+
+/* --- Footer --- */
+.cf-home .foot { background: var(--wood-950); color: var(--paper-3); padding: 34px 0 calc(100px + env(safe-area-inset-bottom)); font-size: 14px; }
+.cf-home .foot__inner { display: grid; gap: 14px; justify-items: center; text-align: center; }
+.cf-home .brand--foot { font-size: 16px; }
+.cf-home .brand--foot img { width: 24px; height: 24px; }
+.cf-home .foot__nav { display: flex; flex-wrap: wrap; justify-content: center; column-gap: 20px; }
+.cf-home .foot__nav a { display: inline-flex; align-items: center; min-height: 44px; text-decoration: none; }
+.cf-home .foot__legal { font-size: 12.5px; }
+
+/* =========================================================
+   STICKY INSTALL BAR (mobile)
+   ========================================================= */
+.cf-home .bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+  background: var(--wood-900);
+  border-top: 1px solid rgba(255, 240, 225, 0.10);
+  box-shadow: 0 -12px 30px -10px rgba(0, 0, 0, 0.45);
+  transform: translateY(110%);
+  visibility: hidden;
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0.32s;
+}
+.cf-home .bar.is-shown { transform: none; visibility: visible; transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s; }
+.cf-home .bar img { flex: none; width: 40px; height: 40px; border-radius: 22.37%; }
+.cf-home .bar__text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+.cf-home .bar__text b { font-size: 15px; }
+.cf-home .bar__text span { font-size: 12.5px; color: var(--paper-3); }
+.cf-home .bar__btn {
+  flex: none; display: inline-flex; align-items: center; min-height: 46px; padding: 0 20px;
+  border-radius: 14px; background: linear-gradient(180deg, var(--cta-hi), var(--cta));
+  color: var(--cta-ink); font-size: 15.5px; font-weight: 700; text-decoration: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  -webkit-tap-highlight-color: transparent;
+}
+.cf-home .bar__btn:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) {
+  .cf-home .bar, .cf-home .bar.is-shown, .cf-home .ig, .cf-home .cta, .cf-home .faq summary::after { transition: none; }
+}
+
+/* =========================================================
+   INSTAGRAM HAND-OFF HINT
+   ========================================================= */
+.cf-home .ig {
+  position: fixed; z-index: 60; top: calc(10px + env(safe-area-inset-top));
+  left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right));
+  max-width: 520px; margin: 0 auto;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 6px 10px 16px; border-radius: 18px;
+  background: var(--card); color: var(--ink);
+  box-shadow: 0 18px 44px -14px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(29, 22, 17, 0.08);
+  opacity: 0; transform: translateY(-8px); transition: opacity 0.25s, transform 0.25s;
+}
+.cf-home .ig.is-shown { opacity: 1; transform: none; }
+.cf-home .ig[hidden] { display: none; }
+.cf-home .ig__text { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.35; color: var(--ink-2); }
+.cf-home .ig__text b { display: block; font-size: 14.5px; color: var(--ink); }
+.cf-home .ig__copy { flex: none; min-height: 44px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--ink); color: var(--paper); font: 600 14px/1 var(--font-inter), system-ui, sans-serif; }
+.cf-home .ig__x { flex: none; width: 40px; height: 44px; border: 0; background: none; font-size: 24px; line-height: 1; color: var(--ink-2); }
+
+/* =========================================================
+   REVEALS (visible without JS and with reduced motion)
+   html.js is added by HomeClient after hydration, once anything already on
+   screen has been marked .is-in, so nothing blinks out and back.
+   ========================================================= */
+@media (prefers-reduced-motion: no-preference) {
+  html.js .cf-home .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.5s ease-out, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+  html.js .cf-home .reveal.is-in { opacity: 1; transform: none; }
+}
+
+/* =========================================================
+   TABLET / DESKTOP
+   ========================================================= */
+@media (min-width: 720px) {
+  .cf-home { --gutter: 32px; }
+  .cf-home .crop, .cf-home .phone { --pw: 290px; }
+  .cf-home .phone--hero { --pw: 330px; }
+  .cf-home .fuel-grid { grid-template-columns: 1fr 1fr; }
+  .cf-home .ladder { grid-template-columns: repeat(8, 1fr); }
+  .cf-home .clip-band { grid-template-columns: 1fr auto; align-items: center; padding: 26px 30px; }
+}
+
+@media (min-width: 960px) {
+  .cf-home .nav { display: flex; gap: 12px; margin-left: auto; margin-right: 8px; }
+  .cf-home .nav a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; min-width: 44px; padding: 0 8px; font-size: 14.5px; color: var(--paper-2); text-decoration: none; }
+  .cf-home .nav a:hover { color: var(--paper); }
+  .cf-home .topbar { height: 76px; }
+
+  .cf-home .hero__grid {
+    display: grid; grid-template-columns: 1.15fr 0.85fr; align-items: center; gap: 40px;
+    padding-top: 24px; padding-bottom: 84px;
+  }
+  .cf-home .hero__copy { text-align: left; }
+  .cf-home .hero__h1 { font-size: 86px; }
+  .cf-home .hero__sub { margin-left: 0; font-size: 20px; max-width: 24em; }
+  .cf-home .hero__copy .cta { margin-left: 0; }
+  .cf-home .hero__phone { margin-top: 0; }
+  .cf-home .phone--hero { --pw: 360px; }
+
+  .cf-home .sec { padding: 112px 0 120px; }
+  .cf-home .sec--tight { padding-top: 32px; }
+  .cf-home .sec__head { margin-bottom: 48px; }
+  .cf-home .lede { font-size: 19px; }
+
+  .cf-home .plan-grid { grid-template-columns: 0.9fr 1fr 1fr; align-items: start; gap: 22px; }
+  .cf-home .positions { margin-bottom: 0; padding-top: 6px; }
+  .cf-home .step .crop, .cf-home .step .phone { --pw: 280px; }
+
+  .cf-home .drills { grid-template-columns: 1fr 0.9fr; align-items: center; gap: 64px; }
+  .cf-home .fact dd { font-size: 19px; }
+
+  .cf-home .ranks { grid-template-columns: 1.1fr 0.9fr; align-items: center; gap: 56px; }
+  .cf-home .ladder { grid-template-columns: repeat(4, 1fr); }
+
+  .cf-home .gc { grid-template-columns: 1fr 1fr; align-items: center; gap: 64px; }
+  .cf-home .price-grid { grid-template-columns: 1.15fr 0.85fr; align-items: start; gap: 22px; }
+  .cf-home .pro { padding: 34px 32px 28px; }
+  .cf-home .pro .cta { margin-left: 0; }
+  .cf-home .pro .center { text-align: left; }
+  .cf-home .after { padding: 30px 28px; }
+
+  .cf-home .final { padding: 120px 0 128px; }
+  .cf-home .foot { padding-bottom: 40px; }
+  .cf-home .foot__inner { grid-template-columns: auto 1fr auto; justify-items: start; text-align: left; align-items: center; }
+  .cf-home .foot__nav { justify-content: center; }
+  .cf-home .bar { display: none; }
+}
