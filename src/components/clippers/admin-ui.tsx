@@ -126,7 +126,7 @@ export function CountBadge({ n, color = "orange" }: { n: number; color?: string 
   );
 }
 
-export function AdminTabs({ active }: { active: "rpm" | "fixed" }) {
+export function AdminTabs({ active }: { active: "rpm" | "fixed" | "links" }) {
   const tab = (href: string, label: string, isActive: boolean) => (
     <Link
       href={href}
@@ -143,6 +143,7 @@ export function AdminTabs({ active }: { active: "rpm" | "fixed" }) {
     <div className="flex flex-wrap gap-2">
       {tab("/clippers/admin", "⚡ RPM campaign", active === "rpm")}
       {tab("/clippers/admin/fixed", "🤝 Fixed deals", active === "fixed")}
+      {tab("/clippers/admin/links", "🔗 Bio links", active === "links")}
     </div>
   );
 }

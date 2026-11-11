@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated: 27 July 2026**
+**Last updated: 11 November 2026**
 
 CourtFuel ("we", "us", "our") is a basketball-specific nutrition and training app. This Privacy Policy explains what data CourtFuel collects, where it goes, how long it is kept, and the choices you have.
 
@@ -52,6 +52,12 @@ The leaderboard is **opt-in**. You are asked before anything is published, and n
 If you join, we publish only: your country, your playing position, your points-per-game average, and how many games you have logged. **Your name is never published**, nor is any photo, and no other user can see who an entry belongs to. Other players' entries are counted to work out your rank; you are never shown their identities, because we do not store them.
 
 You can leave at any time from Profile → Leaderboard. Leaving deletes your entry, it does not merely stop updating it.
+
+## Our website
+
+**Android waitlist.** If you leave your email address on the Android waitlist at courtfuel.app/android, we store that address and the name of the link you arrived from, in the database behind our website. We use it for one thing: to email you when CourtFuel is available on Android. We keep it until the Android app has launched and we have told you, or until you ask us to remove it, whichever comes first. To be removed, email us at the address below.
+
+**Link counts.** Links such as courtfuel.app/go/… count how many taps each one gets, and whether a tap came from an iPhone, an Android phone or something else. No IP address, cookie or other identifier is stored with the count.
 
 ## Third-party services
 

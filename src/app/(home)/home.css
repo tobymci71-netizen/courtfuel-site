@@ -175,6 +175,9 @@ body:has(.cf-home) { margin: 0; overflow-x: hidden; }
 @keyframes cf-home-sheen { to { transform: translateX(330%) skewX(-18deg); } }
 
 .cf-home .micro { margin-top: 12px; font-size: 13px; line-height: 1.5; color: var(--paper-3); }
+/* The one link in the micro copy: "On Android? Join the list". Quiet, so the
+   orange install button stays the only thing that reads as "press me". */
+.cf-home .micro a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 /* At 375px the first micro line fills ~90% of the column in Safari. If a wider
    Safari render tips it over, it breaks between the two sentences, not mid-phrase. */
 .cf-home .nw { white-space: nowrap; }

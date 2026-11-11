@@ -157,6 +157,8 @@ export default function Home() {
               </span>
               <br />
               iPhone, iOS 17 or later
+              <br />
+              On Android? <Link href="/android?from=site">Join the list</Link>
             </p>
           </div>
 
@@ -616,6 +618,8 @@ export default function Home() {
               </span>
               <br />
               iPhone, iOS 17 or later
+              <br />
+              On Android? <Link href="/android?from=site">Join the list</Link>
             </p>
           </div>
         </section>

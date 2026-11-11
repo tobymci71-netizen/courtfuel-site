@@ -7,6 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: `${base}/`, lastModified, priority: 1 },
     { url: `${base}/clippers`, lastModified, priority: 0.6 },
+    { url: `${base}/android`, lastModified, priority: 0.5 },
     { url: `${base}/terms`, lastModified, priority: 0.5 },
     { url: `${base}/support`, lastModified, priority: 0.5 },
     { url: `${base}/privacy`, lastModified, priority: 0.3 },

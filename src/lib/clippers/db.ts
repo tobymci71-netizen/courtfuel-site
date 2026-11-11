@@ -130,6 +130,24 @@ async function migrate() {
   await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS deal_amount_cents BIGINT NOT NULL DEFAULT 0`;
   await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS deal_period TEXT NOT NULL DEFAULT 'weekly'`;
   await sql`ALTER TABLE cf_users ADD COLUMN IF NOT EXISTS deal_started_at TIMESTAMPTZ`;
+  // Bio-link router (/go/<account>): one row per tap. Which link, which kind
+  // of phone, when. Nothing that identifies the person.
+  await sql`
+    CREATE TABLE IF NOT EXISTS cf_link_taps (
+      id         BIGSERIAL PRIMARY KEY,
+      src        TEXT NOT NULL,
+      platform   TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
+  await sql`CREATE INDEX IF NOT EXISTS cf_link_taps_created_idx ON cf_link_taps (created_at)`;
+  // Android waitlist (/android): one email per person, and the link they came from.
+  await sql`
+    CREATE TABLE IF NOT EXISTS cf_waitlist (
+      id         SERIAL PRIMARY KEY,
+      email      TEXT UNIQUE NOT NULL,
+      src        TEXT NOT NULL DEFAULT '',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    )`;
 }
 
 export function ensureSchema(): Promise<void> {
