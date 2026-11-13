@@ -1,6 +1,14 @@
 import "server-only";
 import { ensureSchema, sql } from "@/lib/clippers/db";
 import type { Platform } from "./go";
+import {
+  buildDailySeries,
+  DEFAULT_RANGE,
+  londonDay,
+  type DailySeries,
+  type RangeDays,
+  type TapBucketRow,
+} from "./daily";
 
 // One row per tap on a /go link. No IP address, cookie or user agent is kept:
 // only which link, which kind of phone, and when.
@@ -33,6 +41,25 @@ export async function tapSummary(): Promise<TapRow[]> {
     FROM cf_link_taps
     GROUP BY src
     ORDER BY count(*) DESC`;
+}
+
+// Taps per London day, account and hour for the last `range` London days
+// (today included), shaped into one entry per day by buildDailySeries.
+// The hour is kept so the table can show each day's busiest hour.
+// 'Europe/London' here must match TIME_ZONE in ./daily.
+export async function tapsByDay(range: RangeDays = DEFAULT_RANGE): Promise<DailySeries> {
+  await ensureSchema();
+  const lastDay = londonDay();
+  const rows = await sql<TapBucketRow[]>`
+    SELECT
+      to_char((created_at AT TIME ZONE 'Europe/London')::date, 'YYYY-MM-DD') AS day,
+      src,
+      extract(hour FROM created_at AT TIME ZONE 'Europe/London')::int         AS hour,
+      count(*)::int                                                       AS taps
+    FROM cf_link_taps
+    WHERE created_at >= ((${lastDay}::date - ${range - 1}::int)::timestamp AT TIME ZONE 'Europe/London')
+    GROUP BY 1, 2, 3`;
+  return buildDailySeries(rows, range, lastDay);
 }
 
 export type WaitlistRow = {

@@ -2,7 +2,9 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/clippers/auth";
 import { AdminTabs } from "@/components/clippers/admin-ui";
 import { removeWaitlistEntry } from "@/lib/links/actions";
-import { tapSummary, waitlistRows } from "@/lib/links/store";
+import { tapSummary, tapsByDay, waitlistRows } from "@/lib/links/store";
+import { parseRange } from "@/lib/links/daily";
+import { TapGraphs } from "@/components/links/TapGraphs";
 
 // Admin view for the bio links (/go/<account>) and the Android waitlist.
 
@@ -15,12 +17,21 @@ function fmtDate(iso: string) {
   });
 }
 
-export default async function LinksAdminPage() {
+export default async function LinksAdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string | string[] }>;
+}) {
   const user = await getUser();
   if (!user) redirect("/clippers/login");
   if (user.role !== "admin") redirect("/clippers/dashboard");
 
-  const [taps, waitlist] = await Promise.all([tapSummary(), waitlistRows()]);
+  const range = parseRange((await searchParams).range);
+  const [taps, waitlist, daily] = await Promise.all([
+    tapSummary(),
+    waitlistRows(),
+    tapsByDay(range),
+  ]);
   const emails = waitlist.map((w) => w.email).join(", ");
 
   return (
@@ -33,12 +44,16 @@ export default async function LinksAdminPage() {
           Taps on courtfuel.app/go/&lt;account&gt;. iPhones are sent to the App
           Store, Android phones to the waitlist, everything else to the homepage.
         </p>
+
+        <TapGraphs series={daily} range={range} />
+
+        <h2 className="mt-10 text-sm font-semibold">By kind of phone</h2>
         {taps.length === 0 ? (
           <p className="mt-6 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-6 text-sm text-white/50">
             No taps yet. They show here once a /go link is in a bio.
           </p>
         ) : (
-          <div className="mt-6 overflow-x-auto rounded-xl border border-white/10">
+          <div className="mt-3 overflow-x-auto rounded-xl border border-white/10">
             <table className="w-full min-w-[560px] text-left text-sm">
               <thead className="bg-white/[0.04] text-xs uppercase tracking-wide text-white/50">
                 <tr>
